@@ -88,7 +88,7 @@ class Bacteria:
         # indiscriminate bacteria will be bitten
 
         self.isMatingOn = False
-        # HP>30%
+        # HP>70%
         # to activate mating, chase other isMatingOn bacteria
         # once childProduced = TRUE, turn on
 
