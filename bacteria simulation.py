@@ -67,12 +67,27 @@ class Bacteria:
             'HP' : int(self.dna[20:24], 2)  # last 5 characters represent trait6
         }
 
-        self.tendrils = self.traits['tendrils']
+        # all trait attributes here
+        self.tendrils = self.traits['tendrils'] # range: 0 to 15
+
         self.absorption = self.traits['absorption']
+
         self.membrane = self.traits["membrane"]
+
         self.photosynthesis = self.traits['photosynthesis']
+
         self.legs = self.traits['legs']
+
         self.hp = self.traits['HP']*100
+
+        # bacteria states here
+        self.isBloodlustOn = False
+
+        self.isMatingOn = False
+
+        self.isFatigued = False
+
+        # colors - to eventually be replaced with animated object
         colors = (RED, GREEN, YELLOW, BLUE, CYAN, PURPLE)
         self.color = random.choice(colors)
 
