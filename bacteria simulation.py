@@ -7,11 +7,11 @@ import math
 pygame.init()
 
 # pygame screen elements
-WIDTH, HEIGHT = 200, 200 # default 800,800
+WIDTH, HEIGHT = 400,400 # default 800,800
 TILE_SIZE = 10
 GRID_WIDTH = WIDTH // TILE_SIZE
 GRID_HEIGHT = HEIGHT // TILE_SIZE
-FPS = 5 # clock ticks {FPS} times a real second
+FPS = 10 # clock ticks {FPS} times a real second
 
 # simple RGB colours
 BLACK = (0, 0, 0, 128)
@@ -78,8 +78,8 @@ class Bacteria:
 
         self.legs = self.traits['legs']
 
-        self.hp = self.traits['maxHP']*100
-        self.maxHP = self.traits['maxHP']*100 # need a separate variable; self.hp deducts stuff
+        self.hp = self.traits['maxHP']*200
+        self.maxHP = self.traits['maxHP']*200 # need a separate variable; self.hp deducts stuff
 
         # Bacteria STATES here
 
@@ -145,7 +145,7 @@ class Bacteria:
 
         # # HP < 30%; definitely wants to kill
         # self.BloodlustOn = True
-        if self.hp <= self.maxHP:
+        if self.hp <= 0.9*self.maxHP:
             self.BloodlustOn = True
 
         # Bacteria states
@@ -157,6 +157,7 @@ class Bacteria:
         # if hungry and sees something, will chase
         if self.BloodlustOn and self.detect(bacteria_list) is not None:
             self.chase(self.detect(bacteria_list))
+            print(f"Bacteria {self.id} is on the chase")
         
         # if not hungry or horny, roam
         if not self.BloodlustOn and not self.MatingOn:
@@ -167,7 +168,7 @@ class Bacteria:
         next_positions.remove((self.x, self.y))  # remove current position for self-collision check
         if (self.x, self.y) in next_positions:
             # collision (overlap) detected
-            # print(f"collision at {self.x},{self.y}")
+            print(f"collision at {self.x},{self.y}")
             # randomly move to an empty adjacent cell within 1 block of collision cell
             adjacent_cells = [(x, y) for x in range(self.x - 1, self.x + 2) for y in range(self.y - 1, self.y + 2) if (x, y) not in next_positions]
             if adjacent_cells:
@@ -226,9 +227,11 @@ class Bacteria:
                 for bacteria in bacteria_list:
                     if (bacteria.x, bacteria.y) == pos:
                         # bacteria found in tendril line
+                        print(f"Bacteria {self.colour_name} sees Bacteria {bacteria.color_name} in direction {direction}")
                         # return the direction
                         return direction
                     return None
+
         
     def roam(self): # movement pattern ROAM
         # reduce hp as it roams - costs energy to move// remove later
@@ -245,8 +248,7 @@ class Bacteria:
 
         # generate random direction and move
         direction = random.choice(['top', 'top_right', 'right', 'down_right', 'down', 'down_left', 'left', 'top_left'])
-
-        step = 2
+        step = 3
         self.move(direction, step)
     
     def chase(self, direction):
@@ -323,15 +325,6 @@ def update_bacteria_lifespan(bacteria_list):
             bacteria_lifespan[bacteria.id] = 0
         bacteria_lifespan[bacteria.id] += 1
 
-# function to print the ranking and details of the longest-living bacteria
-def print_longest_living_bacteria():
-    sorted_bacteria_lifespan = sorted(bacteria_lifespan.items(), key=lambda x: x[1], reverse=True)
-    print("Ranking of Bacteria:")
-    for i, (bacteria_id, lifespan) in enumerate(sorted_bacteria_lifespan):
-        print(f"Rank {i+1}: Bacteria ID {bacteria_id}, Lifespan: {lifespan} time steps")
-    longest_living_bacteria_id, longest_lifespan = sorted_bacteria_lifespan[0]
-    print(f"\nThe longest-living bacteria: Bacteria ID {longest_living_bacteria_id}, Lifespan: {longest_lifespan} time steps")
-
 
 # global variable setup for game to work
 bacteria_list = []
@@ -402,8 +395,6 @@ def main():
         pygame.display.update()
 
     pygame.quit()
-    # print the ranking and details of the longest-living bacteria - only print when pygame is closed
-    print_longest_living_bacteria()
 
 if __name__ == "__main__":
     main()
