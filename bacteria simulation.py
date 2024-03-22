@@ -81,7 +81,9 @@ class Bacteria:
 
         self.legs = self.traits['legs']
 
-        self.hp = self.traits['maxHP']*10
+        self.hp = self.traits['maxHP']*30
+
+        self.maxHP = self.traits['maxHP']*30 # need a separate variable; self.hp deducts stuff
 
         # Bacteria STATES here
 
@@ -112,6 +114,51 @@ class Bacteria:
             'left': [(x - i, y) for i in range(1, int(self.tendrils) + 1)],
             'top_left': [(x - i, y - i) for i in range(1, int(self.tendrils) + 1)]
         }
+
+    # --- MAIN FUNCTION FOR BACTERIA LIFE & ACTIONS ---
+    def live(self, bacteria_list):
+
+        # random number generator to determine actions
+        prob_movement = random.uniform(0,1)
+        prob_mate = random.uniform(0,1)
+        prob_hunt = random.uniform(0,1)
+
+        # when just spawn, sit still for a while
+
+        # # HP > 70%; definitely wants to mate
+        # self.isMatingOn = True
+        # # finds a mate
+
+        # # HP 30-70%; if it doesnt hunt, it will mate?
+        # if prob_hunt > 0.75:
+        #     self.isBloodlustOn = True
+        # if prob_mate > 0.75:
+        #     self.isMatingOn = True
+
+        # # HP < 30%; definitely wants to kill
+        # self.isBloodlustOn = True
+        if self.hp <= 0.3*self.maxHP:
+            self.isBloodlustOn = True
+
+        # movement states
+        if self.isBloodlustOn == True or self.isMatingOn:
+            self.frantic()
+        
+        if self.isBloodlustOn == False and self.isMatingOn == False:
+            self.roam()
+
+        # check for OBVIOUS collisions & prevent
+        next_positions = [(bacteria.x, bacteria.y) for bacteria in bacteria_list]
+        next_positions.remove((self.x, self.y))  # remove current position for self-collision check
+        if (self.x, self.y) in next_positions:
+            # collision (overlap) detected
+            # print(f"collision at {self.x},{self.y}")
+            # randomly move to an empty adjacent cell within 1 block of collision cell
+            adjacent_cells = [(x, y) for x in range(self.x - 1, self.x + 2) for y in range(self.y - 1, self.y + 2) if (x, y) not in next_positions]
+            if adjacent_cells:
+                self.x, self.y = random.choice(adjacent_cells)
+        
+    # --- END OF MAIN FUNCTION FOR BACTERIA LIFE & ACTIONS ---
     
     # generates the DNA string - this is only when spawning, children bacteria shoud have another function 'inherit(parent1, parent 2)'
     def generate_dna(self, start_power, length=24): # length should be no of traits x 4
@@ -159,7 +206,7 @@ class Bacteria:
         self.x = max(0, min(self.x, GRID_WIDTH - 1))
         self.y = max(0, min(self.y, GRID_HEIGHT - 1))
         
-    def roam(self, bacteria_list): # movement pattern ROAM
+    def roam(self): # movement pattern ROAM
         # reduce hp as it roams - costs energy to move// remove later
         self.hp -= 1
 
@@ -167,17 +214,15 @@ class Bacteria:
         direction = random.choice(['top', 'top_right', 'right', 'down_right', 'down', 'down_left', 'left', 'top_left'])
         step = 1
         self.move(direction, step)
+    
+    def frantic(self): # movement pattern ROAM
+        # reduce hp as it roams - costs energy to move// remove later
+        self.hp -= 1
 
-        # check for OBVIOUS collisions
-        next_positions = [(bacteria.x, bacteria.y) for bacteria in bacteria_list]
-        next_positions.remove((self.x, self.y))  # remove current position for self-collision check
-        if (self.x, self.y) in next_positions:
-            # collision (overlap) detected
-            # print(f"collision at {self.x},{self.y}")
-            # randomly move to an empty adjacent cell within 1 block of collision cell
-            adjacent_cells = [(x, y) for x in range(self.x - 1, self.x + 2) for y in range(self.y - 1, self.y + 2) if (x, y) not in next_positions]
-            if adjacent_cells:
-                self.x, self.y = random.choice(adjacent_cells)
+        # generate random direction and move
+        direction = random.choice(['top', 'top_right', 'right', 'down_right', 'down', 'down_left', 'left', 'top_left'])
+        step = 10
+        self.move(direction, step)
     
     # death - all can die
     def die(self, bacteria_list):
@@ -289,7 +334,7 @@ def main():
         # draw and move bacteria 
         for bacteria in bacteria_list:
             bacteria.draw(screen)
-            bacteria.roam(bacteria_list) # --- to encapsulate into 1 function eg .live()
+            bacteria.live(bacteria_list) # --- to encapsulate all actions into 1 function eg .live()
             bacteria.update_tendrils_lines()
             bacteria.die(bacteria_list)
         
