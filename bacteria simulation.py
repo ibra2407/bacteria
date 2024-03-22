@@ -82,8 +82,10 @@ class Bacteria:
 
         # bacteria states here
         self.isBloodlustOn = False
+        # to activate chase and bite
 
         self.isMatingOn = False
+        # to activate mating()
 
         self.isFatigued = False
 
