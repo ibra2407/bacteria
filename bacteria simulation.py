@@ -145,23 +145,29 @@ class Bacteria:
 
         # # HP < 30%; definitely wants to kill
         # self.BloodlustOn = True
-        if self.hp <= 0.9*self.maxHP:
+        if self.hp <= 0.99*self.maxHP:
             self.BloodlustOn = True
 
         # Bacteria states
+        # check if there are other bacteria in tendrils lines - can try implement see() for cleaner code, but dont rly matter
+        for direction, positions in self.tendrils_lines.items():
+            for pos in positions:
+                for bacteria in bacteria_list:
+                    if bacteria != self and (bacteria.x, bacteria.y) == pos:
+                        # first other bacteria in tendrils lines found
+                        if self.BloodlustOn or self.MatingOn:
+                            self.chase(direction)
+                            print(f"Bacteria {self.colour_name} is on the chase for bacteria {bacteria.colour_name}")
+        self.roam()
             
-        # gets excited when hungry or horny
-        if self.BloodlustOn or self.MatingOn:
-            self.frantic()
-
-        # if hungry and sees something, will chase
-        if self.BloodlustOn and self.detect(bacteria_list) is not None:
-            self.chase(self.detect(bacteria_list))
-            print(f"Bacteria {self.id} is on the chase")
-        
-        # if not hungry or horny, roam
-        if not self.BloodlustOn and not self.MatingOn:
-            self.roam()
+        # will find other bacteria when hungry or horny
+        # if self.BloodlustOn or self.MatingOn:
+        #     self.chase(bacteria_list)
+        #     print(f"Bacteria {self.colour_name} is on the chase")
+                    
+        # # if not hungry or horny, roam
+        # if not self.BloodlustOn and not self.MatingOn:
+        #     self.roam()
 
         # check for OBVIOUS collisions & prevent
         next_positions = [(bacteria.x, bacteria.y) for bacteria in bacteria_list]
@@ -221,42 +227,17 @@ class Bacteria:
         self.x = max(0, min(self.x, GRID_WIDTH - 1))
         self.y = max(0, min(self.y, GRID_HEIGHT - 1))
 
-    def detect(self, bacteria_list):
-        for direction, positions in self.tendrils_lines.items():
-            for pos in positions:
-                for bacteria in bacteria_list:
-                    if (bacteria.x, bacteria.y) == pos:
-                        # bacteria found in tendril line
-                        print(f"Bacteria {self.colour_name} sees Bacteria {bacteria.color_name} in direction {direction}")
-                        # return the direction
-                        return direction
-                    return None
-
-        
+    def chase(self, direction):
+        step = math.floor(self.legs/2)
+        self.hp -= math.floor(self.legs/2)
+        self.move(direction, step)
+                        
     def roam(self): # movement pattern ROAM
         # reduce hp as it roams - costs energy to move// remove later
         self.hp -= 1
-
         # generate random direction and move
         direction = random.choice(['top', 'top_right', 'right', 'down_right', 'down', 'down_left', 'left', 'top_left'])
         step = 1
-        self.move(direction, step)
-    
-    def frantic(self): # movement pattern ROAM
-        # reduce hp as it roams - costs energy to move// remove later
-        self.hp -= 1
-
-        # generate random direction and move
-        direction = random.choice(['top', 'top_right', 'right', 'down_right', 'down', 'down_left', 'left', 'top_left'])
-        step = 3
-        self.move(direction, step)
-    
-    def chase(self, direction):
-        # reduce hp when chasing
-        self.hp -= math.floor(self.legs/2)
-
-        step = self.legs
-        # direction is passed in
         self.move(direction, step)
     
     # death - all can die
