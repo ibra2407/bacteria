@@ -7,7 +7,7 @@ import math
 pygame.init()
 
 # pygame screen elements
-WIDTH, HEIGHT = 400,400 # default 800,800
+WIDTH, HEIGHT = 800,800 # default 800,800
 TILE_SIZE = 10
 GRID_WIDTH = WIDTH // TILE_SIZE
 GRID_HEIGHT = HEIGHT // TILE_SIZE
@@ -24,6 +24,7 @@ BLUE = (0, 0, 255, 255)
 PURPLE = (255, 0, 255, 0)
 CYAN = (0, 255, 255, 0)
 BLACK = (0, 0, 0, 0)
+ORANGE = (255, 165, 0)
 
 # ---- ---- ---- ---- bacteria class ---- ---- ---- ----
 class Bacteria:
@@ -40,6 +41,9 @@ class Bacteria:
         # current coordinate
         self.x = x
         self.y = y
+
+        # lifespan to measure life
+        self.lifespan = 0
 
         # generate a unique id for the bacteria
         while True:
@@ -71,6 +75,7 @@ class Bacteria:
         self.tendrils = max(1, self.traits['tendrils']) # range: 1 to 15; minimally each one shd have a bit of tendril
 
         self.absorption = self.traits['absorption']
+        self.absorb_range = max(1, math.floor(self.absorption/2))
 
         self.membrane = self.traits["membrane"]
 
@@ -78,20 +83,13 @@ class Bacteria:
 
         self.legs = self.traits['legs']
 
-        self.hp = max(50, self.traits['maxHP']*200)
-        self.maxHP = max(50, self.traits['maxHP']*200) # need a separate variable; self.hp deducts stuff
+        self.hp = max(200, self.traits['maxHP']*200)
+        self.maxHP = max(200, self.traits['maxHP']*200) # need a separate variable; self.hp deducts stuff
 
         # Bacteria STATES here
-
+        # set both to False initially
         self.BloodlustOn = False
-        # HP<30%
-        # to activate chase and bite
-        # indiscriminate bacteria will be bitten
-
         self.MatingOn = False
-        # HP>70%
-        # to activate mating, chase other MatingOn bacteria
-        # once childProduced = TRUE, turn on
 
         # colours - to eventually be replaced with animated object
         colour_dict = {
@@ -100,7 +98,8 @@ class Bacteria:
             "RED": RED,
             "BLUE": BLUE,
             "CYAN": CYAN,
-            "PURPLE": PURPLE
+            "PURPLE": PURPLE,
+            "ORANGE": ORANGE
         }
         # select a random colour key from colour_dict
         colour_name = random.choice(list(colour_dict.keys()))
@@ -130,6 +129,7 @@ class Bacteria:
         prob_movement = random.uniform(0,1)
         prob_mate = random.uniform(0,1)
         prob_hunt = random.uniform(0,1)
+        # print(prob_movement, prob_hunt, prob_mate) # prints probabilities at each time step
 
         self.hp -= 1 # on top of movement hp deduction
 
@@ -138,17 +138,27 @@ class Bacteria:
         # # HP > 70%; definitely wants to mate
         # self.MatingOn = True
         # # finds a mate
+        if(self.hp > 0.8*self.maxHP):
+            self.MatingOn = True
+            self.BloodlustOn = False
 
-        # # HP 30-70%; if it doesnt hunt, it will mate?
-        # if prob_hunt > 0.75:
-        #     self.BloodlustOn = True
-        # if prob_mate > 0.75:
-        #     self.MatingOn = True
+        # # HP 30-70%
+        if (self.hp > 0.3*self.maxHP and self.hp <= 0.8*self.maxHP):
+            if prob_hunt > 0.9:
+                self.BloodlustOn = True
+                self.MatingOn = False
+            if prob_mate > 0.9:
+                self.BloodlustOn = False
+                self.MatingOn = True
+            if prob_movement > 0.3:
+                self.BloodlustOn = False
+                self.MatingOn = False
 
-        # # HP < 30%; definitely wants to kill
+        # # HP < 30%; definitely wants to hunt
         # self.BloodlustOn = True
         if self.hp <= 0.3*self.maxHP:
             self.BloodlustOn = True
+            self.MatingOn = False
 
         # Bacteria states
         # check if there are other bacteria in tendrils lines - can try implement see() for cleaner code, but dont rly matter
@@ -157,25 +167,22 @@ class Bacteria:
                 for bacteria in bacteria_list:
                     if bacteria != self and (bacteria.x, bacteria.y) == pos:
                         # first other bacteria in tendrils lines found
+
+                        # excited case
                         if self.BloodlustOn or self.MatingOn:
-                            self.chase(direction)
                             print(f"Bacteria {self.colour_name} is on the chase for bacteria {bacteria.colour_name}")
-        
+                            self.chase(direction)
+
+                            # hunting case
+                            if self.BloodlustOn:
+                                self.absorb(bacteria_list)
+                            
+                            
         if self.BloodlustOn or self.MatingOn:
             self.frantic()
         # default state
-        if not self.BloodlustOn and not self.MatingOn and prob_movement > 0.2: # 90% chance to sit tight and chill
+        if not self.BloodlustOn and not self.MatingOn and prob_movement > 0.4: # 40% chance to sit and chill if not excited
             self.roam()
-        # the else here is literally do nothing
-            
-        # will find other bacteria when hungry or horny
-        # if self.BloodlustOn or self.MatingOn:
-        #     self.chase(bacteria_list)
-        #     print(f"Bacteria {self.colour_name} is on the chase")
-                    
-        # # if not hungry or horny, roam
-        # if not self.BloodlustOn and not self.MatingOn:
-        #     self.roam()
 
         # check for OBVIOUS collisions & prevent
         next_positions = [(bacteria.x, bacteria.y) for bacteria in bacteria_list]
@@ -263,6 +270,31 @@ class Bacteria:
         if self.hp <= 0:
             bacteria_list.remove(self)
             deaths += 1
+            # add dead bacteria to dictionary
+            bacteria_lifespan[self.id] = {
+            'lifespan': self.lifespan,
+            'dna': self.dna,
+            'traits': self.traits
+        }
+    
+    def absorb(self, bacteria_list):
+        # set the range
+        absorb_range = self.absorb_range
+        # check if any other bacteria is within the bite range
+        for bacteria in bacteria_list:
+            if bacteria != self and abs(self.x - bacteria.x) <= absorb_range and abs(self.y - bacteria.y) <= absorb_range:
+
+                absorb_damage = min(self.absorption, bacteria.hp)  # set to depend on absorption value (20 is just example); also prevents absorption from regaining more than other bacterias hp
+                self.hp += round(absorb_damage*(1+self.absorption),2) # multiplier based on absorption value
+                bacteria.hp -= absorb_damage
+
+                print(f"Bacteria {self.colour_name} bit Bacteria {bacteria.colour_name} at position {bacteria.x},{bacteria.y}.")
+                print(f"After absorbing: {self.colour_name} HP: {self.hp}, {bacteria.colour_name} HP: {bacteria.hp}")
+
+                # check if the other bacteria's HP is zero after absorption
+                if bacteria.hp <= 0:
+                    print(f"Bacteria {bacteria.colour_name} has been fully eaten by Bacteria {self.colour_name}!")
+                return
     
     # ---- FOR PYGAME SCREEN ----
     # draws main body
@@ -275,6 +307,10 @@ class Bacteria:
             for pos in positions:
                 pygame.draw.rect(screen, self.colour, (pos[0] * TILE_SIZE, pos[1] * TILE_SIZE, TILE_SIZE, TILE_SIZE), 1)
         
+        # draw absorb range as a circle
+        absorb_range = self.absorb_range
+        pygame.draw.circle(screen, self.colour, (self.x * TILE_SIZE + TILE_SIZE // 2, self.y * TILE_SIZE + TILE_SIZE // 2), absorb_range * TILE_SIZE, 1)
+        
         # display ID and HP overlayed on top of the main body/coordinate
         font = pygame.font.SysFont(None, 12)
         text_id = font.render(f"ID: {self.id}", True, WHITE)
@@ -283,6 +319,15 @@ class Bacteria:
         screen.blit(text_id, (self.x * TILE_SIZE, self.y * TILE_SIZE - TILE_SIZE))
         screen.blit(text_hp, (self.x * TILE_SIZE, self.y * TILE_SIZE + TILE_SIZE))
         screen.blit(text_dna, (self.x * TILE_SIZE, self.y * TILE_SIZE + 2*TILE_SIZE))
+
+        # bloodlust and mating flags
+        font2 = pygame.font.SysFont(None, 18)
+        if self.BloodlustOn:
+            text_bloodlust = font2.render("Bloodlust", True, RED)
+            screen.blit(text_bloodlust, (self.x * TILE_SIZE, self.y * TILE_SIZE + 3*TILE_SIZE))
+        elif self.MatingOn:
+            text_mating = font2.render("Mating", True, BLUE)
+            screen.blit(text_mating, (self.x * TILE_SIZE, self.y * TILE_SIZE + 3*TILE_SIZE))
 
     # function to make sure tendrils show each time step
     def update_tendrils_lines(self):
@@ -312,16 +357,13 @@ def draw_grid():
     for col in range(GRID_WIDTH):
         pygame.draw.line(screen,BLACK,start_pos=(col*TILE_SIZE,0),end_pos=(col*TILE_SIZE,HEIGHT))
 
-# dictionary to store bacteria objects and their lifespan
+# list to store bacteria objects and their lifespan
 bacteria_lifespan = {}
 
 # function to update bacteria lifespan at each time step
 def update_bacteria_lifespan(bacteria_list):
     for bacteria in bacteria_list:
-        if bacteria.id not in bacteria_lifespan:
-            bacteria_lifespan[bacteria.id] = 0
-        bacteria_lifespan[bacteria.id] += 1
-
+        bacteria.lifespan += 1
 
 # global variable setup for game to work
 bacteria_list = []
@@ -330,7 +372,7 @@ deaths = 0
 # main pygame program
 def main():
     global bacteria_list
-    INIT_NUM_BACTERIA = 2
+    INIT_NUM_BACTERIA = 10
     running = True
 
     # create initial bacteria
@@ -365,28 +407,42 @@ def main():
         update_bacteria_lifespan(bacteria_list)
         
         # statistics; quite hard coded
-        font = pygame.font.SysFont(None, 24)  # define font
+        font3 = pygame.font.SysFont(None, 24)  # define font
         # population count
-        bacteria_count_text = font.render(f"Bacteria count: {len(bacteria_list)}", True, WHITE)  # render text
+        bacteria_count_text = font3.render(f"Bacteria count: {len(bacteria_list)}", True, WHITE)  # render text
         screen.blit(bacteria_count_text, (10, 10))  # hard coded coordinates for placement of text
+
         # death count
-        deaths_count = font.render(f"Death count: {deaths}", True, WHITE)
+        deaths_count = font3.render(f"Death count: {deaths}", True, WHITE)
         screen.blit(deaths_count, (200,10))
+
         # end of sim status
         if len(bacteria_list) == 0:
-            ending = font.render("All bacteria have died. Simulation ended.", True, WHITE)
-            screen.blit(ending, (250, 350))
-            # print rankings too when len(bacteria_list) == 0
+            # sort bacteria by lifespan
+            sorted_bacteria = sorted(bacteria_lifespan.items(), key=lambda x: x[1]['lifespan'], reverse=True)
+            
+            # define font for displaying text on screen
+            font3 = pygame.font.SysFont(None, 24)
+
+            # display rankings
             y_offset = 100
-            sorted_bacteria_lifespan = sorted(bacteria_lifespan.items(), key=lambda x: x[1], reverse=True)
-            text_lines = ["Ranking of Bacteria:"]
-            for i, (bacteria_id, lifespan) in enumerate(sorted_bacteria_lifespan):
-                text_lines.append(f"Rank {i+1}: Bacteria ID {bacteria_id}, Lifespan: {lifespan} time steps")
-            longest_living_bacteria_id, longest_lifespan = sorted_bacteria_lifespan[0]
-            text_lines.append(f"\nThe longest-living bacteria: Bacteria ID {longest_living_bacteria_id}, Lifespan: {longest_lifespan} time steps")
-            for i, line in enumerate(text_lines):
-                text = font.render(line, True, WHITE)
-                screen.blit(text, (10, y_offset + i * 20))
+            ranking_text = font3.render("Ranking of Bacteria:", True, WHITE)
+            screen.blit(ranking_text, (10, y_offset))
+
+            for i, (bacteria_id, details) in enumerate(sorted_bacteria):
+                text = font3.render(f"Rank {i+1}: Bacteria ID {bacteria_id}, Lifespan: {details['lifespan']} time steps", True, WHITE)
+                screen.blit(text, (10, y_offset + (i+1) * 20))
+
+            # display champion
+            champion_id, champion_details = sorted_bacteria[0]
+            text_dna = font3.render(f"DNA of the champion bacteria: {champion_details['dna']}", True, WHITE)
+            screen.blit(text_dna, (10, y_offset + (len(sorted_bacteria) + 2) * 20))
+
+            traits_text = font3.render("Trait values:", True, WHITE)
+            screen.blit(traits_text, (10, y_offset + (len(sorted_bacteria) + 3) * 20))
+            for i, (trait, value) in enumerate(champion_details['traits'].items()):
+                text_trait = font3.render(f"{trait}: {value}", True, WHITE)
+                screen.blit(text_trait, (10, y_offset + (len(sorted_bacteria) + 4 + i) * 20))
 
         # updates time step
         pygame.display.update()
