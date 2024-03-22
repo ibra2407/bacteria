@@ -73,7 +73,7 @@ class Bacteria:
         self.photosynthesis = self.traits['photosynthesis']
         self.legs = self.traits['legs']
         self.hp = self.traits['HP']*100
-        colors = (RED, BLACK, GREEN, YELLOW, BLUE, WHITE)
+        colors = (RED, GREEN, YELLOW, BLUE, CYAN, PURPLE)
         self.color = random.choice(colors)
 
         # simple raytrace element - 0,0 top left, y+ downwards, x+ rightwards
