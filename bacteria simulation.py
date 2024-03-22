@@ -41,6 +41,9 @@ class Bacteria:
         self.x = x
         self.y = y
 
+        # find lifetime
+        # self.lifetime = see who lives the longest
+
         # generate a unique id for the bacteria
         while True:
             new_id = random.randint(100000, 999999)
@@ -64,7 +67,7 @@ class Bacteria:
             'membrane': int(self.dna[8:12], 2),  #
             'photosynthesis': int(self.dna[12:16], 2),
             'legs': int(self.dna[16:20], 2),
-            'HP' : int(self.dna[20:24], 2)
+            'maxHP' : int(self.dna[20:24], 2)
         }
 
         # Bacteria TRAIT attributes here
@@ -78,7 +81,7 @@ class Bacteria:
 
         self.legs = self.traits['legs']
 
-        self.hp = self.traits['HP']*100
+        self.hp = self.traits['maxHP']*10
 
         # Bacteria STATES here
 
@@ -232,6 +235,26 @@ def draw_grid():
     for col in range(GRID_WIDTH):
         pygame.draw.line(screen,BLACK,start_pos=(col*TILE_SIZE,0),end_pos=(col*TILE_SIZE,HEIGHT))
 
+# dictionary to store bacteria objects and their lifespan
+bacteria_lifespan = {}
+
+# function to update bacteria lifespan at each time step
+def update_bacteria_lifespan(bacteria_list):
+    for bacteria in bacteria_list:
+        if bacteria.id not in bacteria_lifespan:
+            bacteria_lifespan[bacteria.id] = 0
+        bacteria_lifespan[bacteria.id] += 1
+
+# function to print the ranking and details of the longest-living bacteria
+def print_longest_living_bacteria():
+    sorted_bacteria_lifespan = sorted(bacteria_lifespan.items(), key=lambda x: x[1], reverse=True)
+    print("Ranking of Bacteria:")
+    for i, (bacteria_id, lifespan) in enumerate(sorted_bacteria_lifespan):
+        print(f"Rank {i+1}: Bacteria ID {bacteria_id}, Lifespan: {lifespan} time steps")
+    longest_living_bacteria_id, longest_lifespan = sorted_bacteria_lifespan[0]
+    print(f"\nThe longest-living bacteria: Bacteria ID {longest_living_bacteria_id}, Lifespan: {longest_lifespan} time steps")
+
+
 # global variable setup for game to work
 bacteria_list = []
 deaths = 0
@@ -270,6 +293,9 @@ def main():
             bacteria.update_tendrils_lines()
             bacteria.die(bacteria_list)
         
+        # updates bacteria lifespan in the list
+        update_bacteria_lifespan(bacteria_list)
+        
         # statistics; quite hard coded
         font = pygame.font.SysFont(None, 24)  # define font
         # population count
@@ -282,11 +308,24 @@ def main():
         if len(bacteria_list) == 0:
             ending = font.render("All bacteria have died. Simulation ended.", True, WHITE)
             screen.blit(ending, (250, 350))
+            # print rankings too when len(bacteria_list) == 0
+            y_offset = 100
+            sorted_bacteria_lifespan = sorted(bacteria_lifespan.items(), key=lambda x: x[1], reverse=True)
+            text_lines = ["Ranking of Bacteria:"]
+            for i, (bacteria_id, lifespan) in enumerate(sorted_bacteria_lifespan):
+                text_lines.append(f"Rank {i+1}: Bacteria ID {bacteria_id} {bacteria.color}, Lifespan: {lifespan} time steps")
+            longest_living_bacteria_id, longest_lifespan = sorted_bacteria_lifespan[0]
+            text_lines.append(f"\nThe longest-living bacteria: Bacteria ID {longest_living_bacteria_id}, Lifespan: {longest_lifespan} time steps")
+            for i, line in enumerate(text_lines):
+                text = font.render(line, True, WHITE)
+                screen.blit(text, (10, y_offset + i * 20))
 
         # updates time step
         pygame.display.update()
 
     pygame.quit()
+    # print the ranking and details of the longest-living bacteria - only print when pygame is closed
+    print_longest_living_bacteria()
 
 if __name__ == "__main__":
     main()
