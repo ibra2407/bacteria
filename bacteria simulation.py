@@ -68,7 +68,7 @@ class Bacteria:
         }
 
         # all trait attributes here
-        self.tendrils = self.traits['tendrils'] # range: 0 to 15
+        self.tendrils = max(1, self.traits['tendrils']) # range: 1 to 15; minimally each one shd have a bit of tendril
 
         self.absorption = self.traits['absorption']
 
