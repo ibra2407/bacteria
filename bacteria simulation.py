@@ -78,8 +78,8 @@ class Bacteria:
 
         self.legs = self.traits['legs']
 
-        self.hp = self.traits['maxHP']*200
-        self.maxHP = self.traits['maxHP']*200 # need a separate variable; self.hp deducts stuff
+        self.hp = max(50, self.traits['maxHP']*200)
+        self.maxHP = max(50, self.traits['maxHP']*200) # need a separate variable; self.hp deducts stuff
 
         # Bacteria STATES here
 
@@ -131,6 +131,8 @@ class Bacteria:
         prob_mate = random.uniform(0,1)
         prob_hunt = random.uniform(0,1)
 
+        self.hp -= 1 # on top of movement hp deduction
+
         # when just spawn, sit still for a while
 
         # # HP > 70%; definitely wants to mate
@@ -145,7 +147,7 @@ class Bacteria:
 
         # # HP < 30%; definitely wants to kill
         # self.BloodlustOn = True
-        if self.hp <= 0.99*self.maxHP:
+        if self.hp <= 0.3*self.maxHP:
             self.BloodlustOn = True
 
         # Bacteria states
@@ -158,7 +160,13 @@ class Bacteria:
                         if self.BloodlustOn or self.MatingOn:
                             self.chase(direction)
                             print(f"Bacteria {self.colour_name} is on the chase for bacteria {bacteria.colour_name}")
-        self.roam()
+        
+        if self.BloodlustOn or self.MatingOn:
+            self.frantic()
+        # default state
+        if not self.BloodlustOn and not self.MatingOn and prob_movement > 0.2: # 90% chance to sit tight and chill
+            self.roam()
+        # the else here is literally do nothing
             
         # will find other bacteria when hungry or horny
         # if self.BloodlustOn or self.MatingOn:
@@ -228,7 +236,7 @@ class Bacteria:
         self.y = max(0, min(self.y, GRID_HEIGHT - 1))
 
     def chase(self, direction):
-        step = math.floor(self.legs/2)
+        step = max(1, math.floor(self.legs/2))
         self.hp -= math.floor(self.legs/2)
         self.move(direction, step)
                         
@@ -238,6 +246,14 @@ class Bacteria:
         # generate random direction and move
         direction = random.choice(['top', 'top_right', 'right', 'down_right', 'down', 'down_left', 'left', 'top_left'])
         step = 1
+        self.move(direction, step)
+    
+    def frantic(self): # movement pattern ROAM
+        # reduce hp as it roams - costs energy to move// remove later
+        self.hp -= 1
+        # generate random direction and move
+        direction = random.choice(['top', 'top_right', 'right', 'down_right', 'down', 'down_left', 'left', 'top_left'])
+        step = 3
         self.move(direction, step)
     
     # death - all can die
