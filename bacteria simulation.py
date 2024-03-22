@@ -7,11 +7,11 @@ import math
 pygame.init()
 
 # pygame screen elements
-WIDTH, HEIGHT = 800, 800 # default 800,800
+WIDTH, HEIGHT = 200, 200 # default 800,800
 TILE_SIZE = 10
 GRID_WIDTH = WIDTH // TILE_SIZE
 GRID_HEIGHT = HEIGHT // TILE_SIZE
-FPS = 10 # clock ticks {FPS} times a real second
+FPS = 5 # clock ticks {FPS} times a real second
 
 # simple RGB colours
 BLACK = (0, 0, 0, 128)
@@ -40,9 +40,6 @@ class Bacteria:
         # current coordinate
         self.x = x
         self.y = y
-
-        # find lifetime
-        # self.lifetime = see who lives the longest
 
         # generate a unique id for the bacteria
         while True:
@@ -81,27 +78,38 @@ class Bacteria:
 
         self.legs = self.traits['legs']
 
-        self.hp = self.traits['maxHP']*30
-
-        self.maxHP = self.traits['maxHP']*30 # need a separate variable; self.hp deducts stuff
+        self.hp = self.traits['maxHP']*100
+        self.maxHP = self.traits['maxHP']*100 # need a separate variable; self.hp deducts stuff
 
         # Bacteria STATES here
 
-        self.isBloodlustOn = False
+        self.BloodlustOn = False
         # HP<30%
         # to activate chase and bite
         # indiscriminate bacteria will be bitten
 
-        self.isMatingOn = False
+        self.MatingOn = False
         # HP>70%
-        # to activate mating, chase other isMatingOn bacteria
+        # to activate mating, chase other MatingOn bacteria
         # once childProduced = TRUE, turn on
 
+        # colours - to eventually be replaced with animated object
+        colour_dict = {
+            "GREEN": GREEN,
+            "YELLOW": YELLOW,
+            "RED": RED,
+            "BLUE": BLUE,
+            "CYAN": CYAN,
+            "PURPLE": PURPLE
+        }
+        # select a random colour key from colour_dict
+        colour_name = random.choice(list(colour_dict.keys()))
 
+        # set the colour attribute using the selected colour key
+        self.colour = colour_dict[colour_name]
 
-        # colors - to eventually be replaced with animated object
-        colors = (RED, GREEN, YELLOW, BLUE, CYAN, PURPLE)
-        self.color = random.choice(colors)
+        # set the colour name attribute
+        self.colour_name = colour_name
 
         # simple raytrace element - 0,0 top left, y+ downwards, x+ rightwards
         self.tendrils_lines = {
@@ -126,25 +134,32 @@ class Bacteria:
         # when just spawn, sit still for a while
 
         # # HP > 70%; definitely wants to mate
-        # self.isMatingOn = True
+        # self.MatingOn = True
         # # finds a mate
 
         # # HP 30-70%; if it doesnt hunt, it will mate?
         # if prob_hunt > 0.75:
-        #     self.isBloodlustOn = True
+        #     self.BloodlustOn = True
         # if prob_mate > 0.75:
-        #     self.isMatingOn = True
+        #     self.MatingOn = True
 
         # # HP < 30%; definitely wants to kill
-        # self.isBloodlustOn = True
-        if self.hp <= 0.3*self.maxHP:
-            self.isBloodlustOn = True
+        # self.BloodlustOn = True
+        if self.hp <= self.maxHP:
+            self.BloodlustOn = True
 
-        # movement states
-        if self.isBloodlustOn == True or self.isMatingOn:
+        # Bacteria states
+            
+        # gets excited when hungry or horny
+        if self.BloodlustOn or self.MatingOn:
             self.frantic()
+
+        # if hungry and sees something, will chase
+        if self.BloodlustOn and self.detect(bacteria_list) is not None:
+            self.chase(self.detect(bacteria_list))
         
-        if self.isBloodlustOn == False and self.isMatingOn == False:
+        # if not hungry or horny, roam
+        if not self.BloodlustOn and not self.MatingOn:
             self.roam()
 
         # check for OBVIOUS collisions & prevent
@@ -201,10 +216,19 @@ class Bacteria:
         elif direction == 'top_left':
             self.x -= step
             self.y -= step
-
         # ensures bacteria stays within the grid
         self.x = max(0, min(self.x, GRID_WIDTH - 1))
         self.y = max(0, min(self.y, GRID_HEIGHT - 1))
+
+    def detect(self, bacteria_list):
+        for direction, positions in self.tendrils_lines.items():
+            for pos in positions:
+                for bacteria in bacteria_list:
+                    if (bacteria.x, bacteria.y) == pos:
+                        # bacteria found in tendril line
+                        # return the direction
+                        return direction
+                    return None
         
     def roam(self): # movement pattern ROAM
         # reduce hp as it roams - costs energy to move// remove later
@@ -221,7 +245,16 @@ class Bacteria:
 
         # generate random direction and move
         direction = random.choice(['top', 'top_right', 'right', 'down_right', 'down', 'down_left', 'left', 'top_left'])
-        step = 10
+
+        step = 2
+        self.move(direction, step)
+    
+    def chase(self, direction):
+        # reduce hp when chasing
+        self.hp -= math.floor(self.legs/2)
+
+        step = self.legs
+        # direction is passed in
         self.move(direction, step)
     
     # death - all can die
@@ -236,12 +269,12 @@ class Bacteria:
     # draws main body
     def draw(self, screen):
         # draw body
-        pygame.draw.rect(screen, self.color, (self.x * TILE_SIZE, self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
+        pygame.draw.rect(screen, self.colour, (self.x * TILE_SIZE, self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
 
         # also draws tendrils lines along with bacteria
         for _, positions in self.tendrils_lines.items():
             for pos in positions:
-                pygame.draw.rect(screen, self.color, (pos[0] * TILE_SIZE, pos[1] * TILE_SIZE, TILE_SIZE, TILE_SIZE), 1)
+                pygame.draw.rect(screen, self.colour, (pos[0] * TILE_SIZE, pos[1] * TILE_SIZE, TILE_SIZE, TILE_SIZE), 1)
         
         # display ID and HP overlayed on top of the main body/coordinate
         font = pygame.font.SysFont(None, 12)
@@ -307,7 +340,7 @@ deaths = 0
 # main pygame program
 def main():
     global bacteria_list
-    INIT_NUM_BACTERIA = 5
+    INIT_NUM_BACTERIA = 2
     running = True
 
     # create initial bacteria
@@ -358,7 +391,7 @@ def main():
             sorted_bacteria_lifespan = sorted(bacteria_lifespan.items(), key=lambda x: x[1], reverse=True)
             text_lines = ["Ranking of Bacteria:"]
             for i, (bacteria_id, lifespan) in enumerate(sorted_bacteria_lifespan):
-                text_lines.append(f"Rank {i+1}: Bacteria ID {bacteria_id} {bacteria.color}, Lifespan: {lifespan} time steps")
+                text_lines.append(f"Rank {i+1}: Bacteria ID {bacteria_id}, Lifespan: {lifespan} time steps")
             longest_living_bacteria_id, longest_lifespan = sorted_bacteria_lifespan[0]
             text_lines.append(f"\nThe longest-living bacteria: Bacteria ID {longest_living_bacteria_id}, Lifespan: {longest_lifespan} time steps")
             for i, line in enumerate(text_lines):
