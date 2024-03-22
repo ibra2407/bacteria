@@ -61,13 +61,13 @@ class Bacteria:
         self.traits = {
             'tendrils': int(self.dna[0:4], 2),  # first 4 characters represent trait1; all max value is 15, min is 0 for 4 bit binary number with base 2
             'absorption': int(self.dna[4:8], 2),  # next 4 characters represent trait2
-            'membrane': int(self.dna[8:12], 2),  # next 4 characters represent trait3
-            'photosynthesis': int(self.dna[12:16], 2),  # next 4 characters represent trait4
-            'legs': int(self.dna[16:20], 2),  # next 4 characters represent trait5
-            'HP' : int(self.dna[20:24], 2)  # last 5 characters represent trait6
+            'membrane': int(self.dna[8:12], 2),  #
+            'photosynthesis': int(self.dna[12:16], 2),
+            'legs': int(self.dna[16:20], 2),
+            'HP' : int(self.dna[20:24], 2)
         }
 
-        # all trait attributes here
+        # Bacteria TRAIT attributes here
         self.tendrils = max(1, self.traits['tendrils']) # range: 1 to 15; minimally each one shd have a bit of tendril
 
         self.absorption = self.traits['absorption']
@@ -80,14 +80,19 @@ class Bacteria:
 
         self.hp = self.traits['HP']*100
 
-        # bacteria states here
+        # Bacteria STATES here
+
         self.isBloodlustOn = False
+        # HP<30%
         # to activate chase and bite
+        # indiscriminate bacteria will be bitten
 
         self.isMatingOn = False
-        # to activate mating()
+        # HP>30%
+        # to activate mating, chase other isMatingOn bacteria
+        # once childProduced = TRUE, turn on
 
-        self.isFatigued = False
+
 
         # colors - to eventually be replaced with animated object
         colors = (RED, GREEN, YELLOW, BLUE, CYAN, PURPLE)
@@ -123,37 +128,6 @@ class Bacteria:
                     self.dna = self.dna[:index] + '0' + self.dna[index + 1:]
                     ones_count -= 1
         return self.dna
-    
-    # draws main body
-    def draw(self, screen):
-        # draw body
-        pygame.draw.rect(screen, self.color, (self.x * TILE_SIZE, self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
-
-        # also draws tendrils lines along with bacteria
-        for _, positions in self.tendrils_lines.items():
-            for pos in positions:
-                pygame.draw.rect(screen, self.color, (pos[0] * TILE_SIZE, pos[1] * TILE_SIZE, TILE_SIZE, TILE_SIZE), 1)
-        
-        # display ID and HP overlayed on top of the main body/coordinate
-        font = pygame.font.SysFont(None, 12)
-        text_id = font.render(f"ID: {self.id}", True, WHITE)
-        text_hp = font.render(f"HP: {self.hp}", True, WHITE)
-        text_dna = font.render(f"DNA: {self.dna}", True, WHITE)
-        screen.blit(text_id, (self.x * TILE_SIZE, self.y * TILE_SIZE - TILE_SIZE))
-        screen.blit(text_hp, (self.x * TILE_SIZE, self.y * TILE_SIZE + TILE_SIZE))
-        screen.blit(text_dna, (self.x * TILE_SIZE, self.y * TILE_SIZE + 2*TILE_SIZE))
-
-    def update_tendrils_lines(self):
-        self.tendrils_lines = {
-            'top': [(self.x, self.y - i) for i in range(1, int(self.tendrils) + 1)],
-            'top_right': [(self.x + i, self.y - i) for i in range(1, int(self.tendrils) + 1)],
-            'right': [(self.x + i, self.y) for i in range(1, int(self.tendrils) + 1)],
-            'down_right': [(self.x + i, self.y + i) for i in range(1, int(self.tendrils) + 1)],
-            'down': [(self.x, self.y + i) for i in range(1, int(self.tendrils) + 1)],
-            'down_left': [(self.x - i, self.y + i) for i in range(1, int(self.tendrils) + 1)],
-            'left': [(self.x - i, self.y) for i in range(1, int(self.tendrils) + 1)],
-            'top_left': [(self.x - i, self.y - i) for i in range(1, int(self.tendrils) + 1)]
-        }
     
     # handles movement of the bacteria - keep this
     def move(self, direction, step):
@@ -209,6 +183,40 @@ class Bacteria:
         if self.hp <= 0:
             bacteria_list.remove(self)
             deaths += 1
+    
+    # ---- FOR PYGAME SCREEN ----
+    # draws main body
+    def draw(self, screen):
+        # draw body
+        pygame.draw.rect(screen, self.color, (self.x * TILE_SIZE, self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
+
+        # also draws tendrils lines along with bacteria
+        for _, positions in self.tendrils_lines.items():
+            for pos in positions:
+                pygame.draw.rect(screen, self.color, (pos[0] * TILE_SIZE, pos[1] * TILE_SIZE, TILE_SIZE, TILE_SIZE), 1)
+        
+        # display ID and HP overlayed on top of the main body/coordinate
+        font = pygame.font.SysFont(None, 12)
+        text_id = font.render(f"ID: {self.id}", True, WHITE)
+        text_hp = font.render(f"HP: {self.hp}", True, WHITE)
+        text_dna = font.render(f"DNA: {self.dna}", True, WHITE)
+        screen.blit(text_id, (self.x * TILE_SIZE, self.y * TILE_SIZE - TILE_SIZE))
+        screen.blit(text_hp, (self.x * TILE_SIZE, self.y * TILE_SIZE + TILE_SIZE))
+        screen.blit(text_dna, (self.x * TILE_SIZE, self.y * TILE_SIZE + 2*TILE_SIZE))
+
+    # function to make sure tendrils show each time step
+    def update_tendrils_lines(self):
+        self.tendrils_lines = {
+            'top': [(self.x, self.y - i) for i in range(1, int(self.tendrils) + 1)],
+            'top_right': [(self.x + i, self.y - i) for i in range(1, int(self.tendrils) + 1)],
+            'right': [(self.x + i, self.y) for i in range(1, int(self.tendrils) + 1)],
+            'down_right': [(self.x + i, self.y + i) for i in range(1, int(self.tendrils) + 1)],
+            'down': [(self.x, self.y + i) for i in range(1, int(self.tendrils) + 1)],
+            'down_left': [(self.x - i, self.y + i) for i in range(1, int(self.tendrils) + 1)],
+            'left': [(self.x - i, self.y) for i in range(1, int(self.tendrils) + 1)],
+            'top_left': [(self.x - i, self.y - i) for i in range(1, int(self.tendrils) + 1)]
+        }
+    # ---- END OF PYGAME SCREEN FUNCTIONS ----
             
 
 # ---- ---- ---- ---- end of Bacteria class
