@@ -7,7 +7,7 @@ import math
 pygame.init()
 
 # pygame screen elements
-WIDTH, HEIGHT = 800,800 # default 800,800
+WIDTH, HEIGHT = 300,300 # default 800,800
 TILE_SIZE = 10
 GRID_WIDTH = WIDTH // TILE_SIZE
 GRID_HEIGHT = HEIGHT // TILE_SIZE
@@ -83,7 +83,7 @@ class Bacteria:
 
         self.legs = self.traits['legs']
 
-        self.hp = 0.8*max(200, self.traits['maxHP']*200) # start with 80% hp so dont spawn in mating mood
+        self.hp = 0.35*max(200, self.traits['maxHP']*200) # start with 80% hp so dont spawn in mating mood
         self.maxHP = max(200, self.traits['maxHP']*200) # need a separate variable; self.hp deducts stuff
 
         # Bacteria STATES here
@@ -282,19 +282,24 @@ class Bacteria:
         absorb_range = self.absorb_range
         # check if any other bacteria is within the bite range
         for bacteria in bacteria_list:
-            if bacteria != self and abs(self.x - bacteria.x) <= absorb_range and abs(self.y - bacteria.y) <= absorb_range:
+            if bacteria != self and abs(self.x - bacteria.x) <= absorb_range and abs(self.y - bacteria.y) <= absorb_range: # only within range
+                if self.absorption > bacteria.absorption: # only higher absorption wins out; enable only if can penetrate armor
+                    if self.absorption > bacteria.membrane:
+                        absorb_damage = min(self.absorption - bacteria.membrane, bacteria.hp)  # set to depend on absorption value (20 is just example); also prevents absorption from regaining more than other bacterias hp
+                        self.hp += round(absorb_damage,2) # multiplier based on absorption value
+                        bacteria.hp -= absorb_damage
+                    else:
+                        absorb_damage = min(1, bacteria.hp) # if the other guy defense is too high, deal only 1 damage. cannot absorb more than remaining bacteria hp
+                        self.hp += round(absorb_damage,2) # multiplier based on absorption value
+                        bacteria.hp -= absorb_damage
 
-                absorb_damage = min(self.absorption, bacteria.hp)  # set to depend on absorption value (20 is just example); also prevents absorption from regaining more than other bacterias hp
-                self.hp += round(absorb_damage*(1+self.absorption),2) # multiplier based on absorption value
-                bacteria.hp -= absorb_damage
+                    print(f"Bacteria {self.colour_name} bit Bacteria {bacteria.colour_name} at position {bacteria.x},{bacteria.y}.")
+                    print(f"After absorbing: {self.colour_name} HP: {self.hp}, {bacteria.colour_name} HP: {bacteria.hp}")
 
-                print(f"Bacteria {self.colour_name} bit Bacteria {bacteria.colour_name} at position {bacteria.x},{bacteria.y}.")
-                print(f"After absorbing: {self.colour_name} HP: {self.hp}, {bacteria.colour_name} HP: {bacteria.hp}")
-
-                # check if the other bacteria's HP is zero after absorption
-                if bacteria.hp <= 0:
-                    print(f"Bacteria {bacteria.colour_name} has been fully eaten by Bacteria {self.colour_name}!")
-                return
+                    # check if the other bacteria's HP is zero after absorption
+                    if bacteria.hp <= 0:
+                        print(f"Bacteria {bacteria.colour_name} has been fully eaten by Bacteria {self.colour_name}!")
+                    return
     
     # ---- FOR PYGAME SCREEN ----
     # draws main body
@@ -372,7 +377,7 @@ deaths = 0
 # main pygame program
 def main():
     global bacteria_list
-    INIT_NUM_BACTERIA = 10
+    INIT_NUM_BACTERIA = 2
     running = True
 
     # create initial bacteria
