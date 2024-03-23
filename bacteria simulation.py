@@ -83,7 +83,7 @@ class Bacteria:
 
         self.legs = self.traits['legs']
 
-        self.hp = max(200, self.traits['maxHP']*200)
+        self.hp = 0.8*max(200, self.traits['maxHP']*200) # start with 80% hp so dont spawn in mating mood
         self.maxHP = max(200, self.traits['maxHP']*200) # need a separate variable; self.hp deducts stuff
 
         # Bacteria STATES here
