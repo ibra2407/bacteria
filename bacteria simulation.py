@@ -150,7 +150,7 @@ class Bacteria:
             if prob_mate > 0.9:
                 self.BloodlustOn = False
                 self.MatingOn = True
-            if prob_movement > 0.3:
+            if prob_movement > 0.6: # might require balancing
                 self.BloodlustOn = False
                 self.MatingOn = False
 
