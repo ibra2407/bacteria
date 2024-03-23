@@ -7,7 +7,7 @@ import math
 pygame.init()
 
 # pygame screen elements
-WIDTH, HEIGHT = 300,300 # default 800,800
+WIDTH, HEIGHT = 800,800 # default 800,800
 TILE_SIZE = 10
 GRID_WIDTH = WIDTH // TILE_SIZE
 GRID_HEIGHT = HEIGHT // TILE_SIZE
@@ -83,7 +83,7 @@ class Bacteria:
 
         self.legs = self.traits['legs']
 
-        self.hp = 0.35*max(200, self.traits['maxHP']*200) # start with 80% hp so dont spawn in mating mood
+        self.hp = 0.8*max(200, self.traits['maxHP']*200) # start with 80% hp so dont spawn in mating mood
         self.maxHP = max(200, self.traits['maxHP']*200) # need a separate variable; self.hp deducts stuff
 
         # Bacteria STATES here
@@ -377,7 +377,7 @@ deaths = 0
 # main pygame program
 def main():
     global bacteria_list
-    INIT_NUM_BACTERIA = 2
+    INIT_NUM_BACTERIA = 106
     running = True
 
     # create initial bacteria
