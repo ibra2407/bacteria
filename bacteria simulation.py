@@ -7,24 +7,25 @@ import math
 pygame.init()
 
 # pygame screen elements
-WIDTH, HEIGHT = 800,800 # default 800,800
+WIDTH, HEIGHT = 1200,800 # default 800,800
 TILE_SIZE = 10
 GRID_WIDTH = WIDTH // TILE_SIZE
 GRID_HEIGHT = HEIGHT // TILE_SIZE
 FPS = 10 # clock ticks {FPS} times a real second
 
 # simple RGB colours
-BLACK = (0, 0, 0, 128)
-GREY = (128, 128, 128, 0)
-YELLOW = (255, 255, 0, 0)
-WHITE = (255, 255, 255, 0)
-RED = (255, 0, 0, 255)
-GREEN = (0, 255, 0, 0)
-BLUE = (0, 0, 255, 255)
-PURPLE = (255, 0, 255, 0)
-CYAN = (0, 255, 255, 0)
-BLACK = (0, 0, 0, 0)
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+GREY = (128, 128, 128)
+
+PINK = (255, 192, 203)
+RED = (255, 0, 0)
 ORANGE = (255, 165, 0)
+YELLOW = (255, 255, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+CYAN = (0, 255, 255)
+PURPLE = (255, 0, 255)
 
 # ---- ---- ---- ---- bacteria class ---- ---- ---- ----
 class Bacteria:
@@ -93,13 +94,14 @@ class Bacteria:
 
         # colours - to eventually be replaced with animated object
         colour_dict = {
-            "GREEN": GREEN,
-            "YELLOW": YELLOW,
             "RED": RED,
+            "ORANGE": ORANGE,
+            "YELLOW": YELLOW,
+            "GREEN": GREEN,
             "BLUE": BLUE,
             "CYAN": CYAN,
             "PURPLE": PURPLE,
-            "ORANGE": ORANGE
+            "PINK": PINK
         }
         # select a random colour key from colour_dict
         colour_name = random.choice(list(colour_dict.keys()))
@@ -377,7 +379,7 @@ deaths = 0
 # main pygame program
 def main():
     global bacteria_list
-    INIT_NUM_BACTERIA = 106
+    INIT_NUM_BACTERIA = 20
     running = True
 
     # create initial bacteria
