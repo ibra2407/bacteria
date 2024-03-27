@@ -7,7 +7,7 @@ import math
 pygame.init()
 
 # pygame screen elements
-WIDTH, HEIGHT = 200,200 # default 800,800
+WIDTH, HEIGHT = 300,300 # default 800,800
 TILE_SIZE = 10
 GRID_WIDTH = WIDTH // TILE_SIZE
 GRID_HEIGHT = HEIGHT // TILE_SIZE
@@ -318,6 +318,7 @@ class Bacteria:
     def mate(self, bacteria_list):
         # set the range
         pheromone_range = 4
+        one_child = 0
         for bacteria in bacteria_list:
             # check if any other bacteria is within mating range
             if bacteria != self and abs(self.x - bacteria.x) <= pheromone_range and abs(self.y - bacteria.y) <= pheromone_range: # only within range
@@ -352,9 +353,11 @@ class Bacteria:
                     # Child should spawn where the parents mated
                     child.x = (self.x + bacteria.x) // 2
                     child.y = (self.y + bacteria.y) // 2
-                    
-                    # Append child to bacteria list
-                    bacteria_list.append(child)
+
+                    if one_child == 0:
+                        # Append child to bacteria list
+                        bacteria_list.append(child)
+                    one_child = 1
         self.MatingOn = False
         bacteria.MatingOn = False
 
@@ -497,7 +500,7 @@ def main():
             screen.blit(ranking_text, (10, y_offset))
 
             for i, (bacteria_id, details) in enumerate(sorted_bacteria):
-                text = font3.render(f"Rank {i+1}: Bacteria ID {bacteria_id}, Lifespan: {details['lifespan']} time steps", True, WHITE)
+                text = font3.render(f"Rank {i+1}: Bacteria ID {bacteria_id}, DNA: {details['dna']}, Lifespan: {details['lifespan']} time steps", True, WHITE)
                 screen.blit(text, (10, y_offset + (i+1) * 20))
 
             # display champion
