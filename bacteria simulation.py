@@ -7,7 +7,7 @@ import math
 pygame.init()
 
 # pygame screen elements
-WIDTH, HEIGHT = 1200,800 # default 800,800
+WIDTH, HEIGHT = 200,200 # default 800,800
 TILE_SIZE = 10
 GRID_WIDTH = WIDTH // TILE_SIZE
 GRID_HEIGHT = HEIGHT // TILE_SIZE
@@ -32,8 +32,9 @@ class Bacteria:
 
     # BACTERIA SIMULATION PARAMS; access in class functions as Bacteria.----
     EXISTING_IDS = set()  # store generated IDs, ensuring they dont repeat
-    START_POWER = 12 # number of 1s allowed in dna string at the start; "power" of each cell at the start shd be low and get higher as generations go
+    START_POWER = 8 # number of 1s allowed in dna string at the start; "power" of each cell at the start shd be low and get higher as generations go
     # can start with half of 24 (total)
+    MAX_POWER = 18 # can only choose to max out 4 out of 6 traits; 10% chance of a child to increase its power
     
     # insert others to change "global" params for all bacteria
 
@@ -60,7 +61,8 @@ class Bacteria:
         self.isChild = isChild
         if self.isChild == False:
             self.dna = self.generate_dna(Bacteria.START_POWER)
-            # self.dna = self.generate_dna() if self.child = False else self.inherit(parent1,parent2)
+        else:
+            self.dna = 24*"0"
 
         # decode genetic string into traits
         self.traits = {
@@ -84,7 +86,7 @@ class Bacteria:
 
         self.legs = self.traits['legs']
 
-        self.hp = 0.8*max(200, self.traits['maxHP']*200) # start with 80% hp so dont spawn in mating mood
+        self.hp = max(200, self.traits['maxHP']*200) # start with 80% hp so dont spawn in mating mood
         self.maxHP = max(200, self.traits['maxHP']*200) # need a separate variable; self.hp deducts stuff
 
         # Bacteria STATES here
@@ -178,6 +180,11 @@ class Bacteria:
                             # hunting case
                             if self.BloodlustOn:
                                 self.absorb(bacteria_list)
+                            
+                            # mating case
+                            if self.MatingOn:
+                                if prob_mate > 0.9:
+                                    self.mate(bacteria_list)
                             
                             
         if self.BloodlustOn or self.MatingOn:
@@ -279,20 +286,24 @@ class Bacteria:
             'traits': self.traits
         }
     
+    # absorption logic
     def absorb(self, bacteria_list):
         # set the range
         absorb_range = self.absorb_range
         # check if any other bacteria is within the bite range
         for bacteria in bacteria_list:
             if bacteria != self and abs(self.x - bacteria.x) <= absorb_range and abs(self.y - bacteria.y) <= absorb_range: # only within range
-                if self.absorption > bacteria.absorption: # only higher absorption wins out; enable only if can penetrate armor
+                # only higher absorption wins out;
+                if self.absorption > bacteria.absorption:
+                    # case 1: enable absoprtion if can penetrate armor
                     if self.absorption > bacteria.membrane:
                         absorb_damage = min(self.absorption - bacteria.membrane, bacteria.hp)  # set to depend on absorption value (20 is just example); also prevents absorption from regaining more than other bacterias hp
-                        self.hp += round(absorb_damage,2) # multiplier based on absorption value
+                        self.hp += round(absorb_damage,2)
                         bacteria.hp -= absorb_damage
+                    # if the other guy defense is too high, deal only 1 damage. cannot absorb more than remaining bacteria hp (if remaining bacteria hp is 1)
                     else:
-                        absorb_damage = min(1, bacteria.hp) # if the other guy defense is too high, deal only 1 damage. cannot absorb more than remaining bacteria hp
-                        self.hp += round(absorb_damage,2) # multiplier based on absorption value
+                        absorb_damage = min(1, bacteria.hp) 
+                        self.hp += round(absorb_damage,2)
                         bacteria.hp -= absorb_damage
 
                     print(f"Bacteria {self.colour_name} bit Bacteria {bacteria.colour_name} at position {bacteria.x},{bacteria.y}.")
@@ -302,6 +313,55 @@ class Bacteria:
                     if bacteria.hp <= 0:
                         print(f"Bacteria {bacteria.colour_name} has been fully eaten by Bacteria {self.colour_name}!")
                     return
+    
+    # mating logic using DNA
+    def mate(self, bacteria_list):
+        # set the range
+        pheromone_range = 4
+        for bacteria in bacteria_list:
+            # check if any other bacteria is within mating range
+            if bacteria != self and abs(self.x - bacteria.x) <= pheromone_range and abs(self.y - bacteria.y) <= pheromone_range: # only within range
+                # both must be in mating mood
+                if self.MatingOn and bacteria.MatingOn:
+                    # Identify highest trait values for both parents
+                    self_highest_trait = max(self.traits.items(), key=lambda x: x[1])
+                    other_highest_trait = max(bacteria.traits.items(), key=lambda x: x[1])
+
+                    # Child inherits both parents' strongest traits
+                    child_traits = {self_highest_trait[0]: self_highest_trait[1], other_highest_trait[0]: other_highest_trait[1]}
+
+                    # Calculate total number of 1s in parents' DNA
+                    total_ones_self = self.dna.count('1')
+                    total_ones_other = bacteria.dna.count('1')
+
+                    # Determine number of 1s in child's DNA
+                    child_total_ones = max(total_ones_self, total_ones_other)
+                    # There's a 10% chance for an extra 1 in child's DNA
+                    if random.uniform(0, 1) < 0.1:
+                        child_total_ones += 1
+
+                    # Ensure child_total_ones does not exceed MAX_POWER
+                    child_total_ones = min(child_total_ones, Bacteria.MAX_POWER)
+
+                    # Allocate remaining 1s randomly while maintaining total_ones
+                    child_dna = ''.join(['1' if i < child_total_ones else '0' for i in range(child_total_ones)])
+
+                    # Create child with inherited traits and DNA
+                    child = Bacteria(self.x, self.y, isChild=True)
+                    child.dna = child_dna
+                    # Child should spawn where the parents mated
+                    child.x = (self.x + bacteria.x) // 2
+                    child.y = (self.y + bacteria.y) // 2
+                    
+                    # Append child to bacteria list
+                    bacteria_list.append(child)
+        self.MatingOn = False
+        bacteria.MatingOn = False
+
+    # inheritance logic - to get dna from mate() and pass it to inherit(), which will set the child bacteria new dna
+    def inherit(self, parent1, parent2):
+        pass
+
     
     # ---- FOR PYGAME SCREEN ----
     # draws main body
@@ -379,7 +439,7 @@ deaths = 0
 # main pygame program
 def main():
     global bacteria_list
-    INIT_NUM_BACTERIA = 20
+    INIT_NUM_BACTERIA = 2
     running = True
 
     # create initial bacteria
