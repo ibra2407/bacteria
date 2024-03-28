@@ -13,9 +13,17 @@ pygame.init()
 
 # pygame screen elements
 WIDTH, HEIGHT = 1200,800 # default 800,800
-TILE_SIZE = 10
-GRID_WIDTH = WIDTH // TILE_SIZE
-GRID_HEIGHT = HEIGHT // TILE_SIZE
+TILE_SIZE = 5
+
+# Calculate SIM_BOUND widths dynamically
+LEFT_SIM_BOUND_WIDTH = WIDTH // 4  # Width of the left SIM_BOUND (in pixels)
+RIGHT_SIM_BOUND_WIDTH = WIDTH - LEFT_SIM_BOUND_WIDTH  # Width of the right SIM_BOUND (in pixels)
+
+GRID_WIDTH = RIGHT_SIM_BOUND_WIDTH // TILE_SIZE  # Width of the grid (in tiles)
+GRID_HEIGHT = HEIGHT // TILE_SIZE  # Height of the grid (in tiles)
+
+# GRID_WIDTH = WIDTH // TILE_SIZE
+# GRID_HEIGHT = HEIGHT // TILE_SIZE
 FPS = 120 # clock ticks {FPS} times a real second
 
 # simple RGB colours
@@ -257,8 +265,10 @@ class Bacteria:
             self.x -= step
             self.y -= step
         # ensures bacteria stays within the grid
-        self.x = max(0, min(self.x, GRID_WIDTH - 1))
-        self.y = max(0, min(self.y, GRID_HEIGHT - 1))
+        # self.x = max(0, min(self.x, GRID_WIDTH - 1))
+        # self.y = max(0, min(self.y, GRID_HEIGHT - 1))
+        self.x = max(LEFT_SIM_BOUND_WIDTH // TILE_SIZE, min(self.x, (WIDTH - 1) // TILE_SIZE))
+        self.y = max(0, min(self.y, (HEIGHT - 1) // TILE_SIZE))
 
     def chase(self, direction):
         step = max(1, math.floor(self.legs/2))
@@ -459,11 +469,14 @@ screen = pygame.display.set_mode( (WIDTH,HEIGHT) ) #takes in a tuple as argument
 clock = pygame.time.Clock()
 
 def draw_grid():
-    
     for row in range(GRID_HEIGHT):
         pygame.draw.line(screen,BLACK,start_pos=(0,row*TILE_SIZE),end_pos=(WIDTH,row*TILE_SIZE))
     for col in range(GRID_WIDTH):
         pygame.draw.line(screen,BLACK,start_pos=(col*TILE_SIZE,0),end_pos=(col*TILE_SIZE,HEIGHT))
+
+# draw bounding box for bacteria simulation
+def draw_outline():
+    pygame.draw.rect(screen, BLACK, (LEFT_SIM_BOUND_WIDTH, 0, RIGHT_SIM_BOUND_WIDTH, HEIGHT), 2)
 
 # list to store bacteria objects and their lifespan
 bacteria_lifespan = {}
@@ -506,7 +519,8 @@ def main():
         # highlight_rect = pygame.Rect(3*TILE_SIZE, 3*TILE_SIZE, TILE_SIZE, TILE_SIZE)
         # pygame.draw.rect(screen, (255, 0, 0), highlight_rect, 0)
         # here we use draw_grid to draw the positions on top of the grid
-        draw_grid()
+        # draw_grid()
+        draw_outline()
 
         # draw and move bacteria 
         for bacteria in bacteria_list:
@@ -526,7 +540,7 @@ def main():
 
         # death count
         deaths_count = font2.render(f"Death count: {deaths}", True, WHITE)
-        screen.blit(deaths_count, (200,10))
+        screen.blit(deaths_count, (160,10))
 
         # # end of sim status
         if len(bacteria_list) == 0:
