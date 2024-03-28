@@ -14,6 +14,9 @@ Analysis:
 Aesthetics:
 1. UI design of bacteria & background (graphics)
 2. menu screen (to set parameters or smth)
+
+Performance:
+1. make the matplotlib a bit smoother and can actually use to see shit
 '''
 
 # install these libraries
