@@ -2,16 +2,21 @@
 import pygame
 import random
 import math
+import matplotlib.pyplot as plt
+from matplotlib.widgets import TextBox
+import numpy as np
+import tkinter as tk
+from tkinter import scrolledtext
 
 # initialise a pygame instance
 pygame.init()
 
 # pygame screen elements
-WIDTH, HEIGHT = 800,800 # default 800,800
+WIDTH, HEIGHT = 1200,800 # default 800,800
 TILE_SIZE = 10
 GRID_WIDTH = WIDTH // TILE_SIZE
 GRID_HEIGHT = HEIGHT // TILE_SIZE
-FPS = 60 # clock ticks {FPS} times a real second
+FPS = 120 # clock ticks {FPS} times a real second
 
 # simple RGB colours
 BLACK = (0, 0, 0)
@@ -36,7 +41,7 @@ class Bacteria:
     # can start with half of 24 (total)
     MAX_POWER = 18 # can only choose to max out 4 out of 6 traits; 10% chance of a child to increase its power
 
-    MATING_COOLDOWN = 2000
+    MATING_COOLDOWN = 3000
     
     # insert others to change "global" params for all bacteria
 
@@ -143,16 +148,16 @@ class Bacteria:
 
         # when just spawn, sit still for a while
 
-        # # HP > 70%; definitely wants to mate
+        # # HP > 80%; definitely wants to mate
         # self.MatingOn = True
         # # finds a mate
         if(self.hp > 0.8*self.maxHP):
             self.MatingOn = True
             self.BloodlustOn = False
 
-        # # HP 30-70%
-        if (self.hp > 0.3*self.maxHP and self.hp <= 0.8*self.maxHP):
-            if prob_hunt > 0.9:
+        # # HP 20-80%
+        if (self.hp > 0.2*self.maxHP and self.hp <= 0.8*self.maxHP):
+            if prob_hunt > 0.8:
                 self.BloodlustOn = True
                 self.MatingOn = False
             if prob_mate > 0.8:
@@ -162,9 +167,9 @@ class Bacteria:
                 self.BloodlustOn = False
                 self.MatingOn = False
 
-        # # HP < 30%; definitely wants to hunt
+        # # HP < 20%; definitely wants to hunt
         # self.BloodlustOn = True
-        if self.hp <= 0.3*self.maxHP:
+        if self.hp <= 0.2*self.maxHP:
             self.BloodlustOn = True
             self.MatingOn = False
 
@@ -287,7 +292,8 @@ class Bacteria:
             bacteria_lifespan[self.id] = {
             'lifespan': self.lifespan,
             'dna': self.dna,
-            'traits': self.traits
+            'traits': self.traits,
+            'isChild': self.isChild
         }
     
     # absorption logic
@@ -321,7 +327,7 @@ class Bacteria:
     # mating logic using DNA
     def mate(self, bacteria_list):
         # set the range
-        pheromone_range = 4
+        pheromone_range = 3
         for bacteria in bacteria_list:
             # check if any other bacteria is within mating range
             if bacteria != self and abs(self.x - bacteria.x) <= pheromone_range and abs(self.y - bacteria.y) <= pheromone_range: # only within range
@@ -375,6 +381,10 @@ class Bacteria:
                         # Append child to bacteria list
                         bacteria_list.append(child)
 
+                        # parents sacrifice hp to create child
+                        self.hp -= 50
+                        bacteria.hp -= 50
+
                         self.last_mate_time = current_time
 
         self.MatingOn = False
@@ -382,10 +392,18 @@ class Bacteria:
 
 
     # inheritance logic - to get dna from mate() and pass it to inherit(), which will set the child bacteria new dna
-    def inherit(self, parent1, parent2):
+    # defined in mate() already, works fine
+    # def inherit(self, parent1, parent2):
+    #     pass
+    
+    # running logic against hungry bacteria
+    def run(self, bacteria_list):
         pass
 
-    
+    # sunlight zone behaviour
+    def photosynthesise(self, zone_value):
+        pass
+
     # ---- FOR PYGAME SCREEN ----
     # draws main body
     def draw(self, screen):
@@ -459,10 +477,13 @@ def update_bacteria_lifespan(bacteria_list):
 bacteria_list = []
 deaths = 0
 
+# analytics section
+
+
 # main pygame program
 def main():
     global bacteria_list
-    INIT_NUM_BACTERIA = 20
+    INIT_NUM_BACTERIA = 40
     
     running = True
 
@@ -498,17 +519,19 @@ def main():
         update_bacteria_lifespan(bacteria_list)
         
         # statistics; quite hard coded
-        font3 = pygame.font.SysFont(None, 24)  # define font
+        font2 = pygame.font.SysFont(None, 24)  # define font
         # population count
-        bacteria_count_text = font3.render(f"Bacteria count: {len(bacteria_list)}", True, WHITE)  # render text
+        bacteria_count_text = font2.render(f"Bacteria count: {len(bacteria_list)}", True, WHITE)  # render text
         screen.blit(bacteria_count_text, (10, 10))  # hard coded coordinates for placement of text
 
         # death count
-        deaths_count = font3.render(f"Death count: {deaths}", True, WHITE)
+        deaths_count = font2.render(f"Death count: {deaths}", True, WHITE)
         screen.blit(deaths_count, (200,10))
 
-        # end of sim status
+        # # end of sim status
         if len(bacteria_list) == 0:
+            # sim = font2.render("Simulation ended.", True, WHITE)
+            # screen.blit(sim, (WIDTH//2, HEIGHT//2))
             # sort bacteria by lifespan
             sorted_bacteria = sorted(bacteria_lifespan.items(), key=lambda x: x[1]['lifespan'], reverse=True)
             
@@ -516,24 +539,45 @@ def main():
             font3 = pygame.font.SysFont(None, 24)
 
             # display rankings
-            y_offset = 100
-            ranking_text = font3.render("Ranking of Bacteria:", True, WHITE)
-            screen.blit(ranking_text, (10, y_offset))
-
-            for i, (bacteria_id, details) in enumerate(sorted_bacteria):
-                text = font3.render(f"Rank {i+1}: Bacteria ID {bacteria_id}, DNA: {details['dna']}, Lifespan: {details['lifespan']} time steps", True, WHITE)
-                screen.blit(text, (10, y_offset + (i+1) * 20))
+            y_offset = 60
+            gap = 30
 
             # display champion
             champion_id, champion_details = sorted_bacteria[0]
             text_dna = font3.render(f"DNA of the champion bacteria: {champion_details['dna']}", True, WHITE)
-            screen.blit(text_dna, (10, y_offset + (len(sorted_bacteria) + 2) * 20))
+            screen.blit(text_dna, (10, y_offset))
 
             traits_text = font3.render("Trait values:", True, WHITE)
-            screen.blit(traits_text, (10, y_offset + (len(sorted_bacteria) + 3) * 20))
+            screen.blit(traits_text, (10, y_offset + gap))
             for i, (trait, value) in enumerate(champion_details['traits'].items()):
                 text_trait = font3.render(f"{trait}: {value}", True, WHITE)
-                screen.blit(text_trait, (10, y_offset + (len(sorted_bacteria) + 4 + i) * 20))
+                screen.blit(text_trait, (10, y_offset + (i+2)*gap))
+            
+            # Print if the champion bacteria is a child or not
+            child_text = "Child" if champion_details['isChild']==True else "not a child"
+            text_child = font3.render(f"Champion is a {child_text}", True, WHITE)
+            screen.blit(text_child, (10, y_offset + (i + 3) * gap))
+
+            # Display top 10 bacteria with longest lifespans
+            ranking_text = font3.render("Top 10 Ranking of Bacteria according to Lifespan:", True, WHITE)
+            screen.blit(ranking_text, (20, y_offset + (i + 4) * gap))
+
+            for j, (bacteria_id, details) in enumerate(sorted_bacteria[:10], start=1):
+                # Construct text for the current bacteria
+                text_rank = f"{j}. Lifespan: {details['lifespan']}, {'Child' if details['isChild'] else 'NotChild'}"
+                for trait, value in details['traits'].items():
+                    text_rank += f", {trait}: {value}"
+                
+                # Render and display the text
+                text_rank_rendered = font3.render(text_rank, True, WHITE)
+                screen.blit(text_rank_rendered, (20, y_offset + (j+9) * gap))
+
+            # ranking_text = font3.render("Ranking of Bacteria:", True, WHITE)
+            # screen.blit(ranking_text, (10, y_offset))
+
+            # for i, (bacteria_id, details) in enumerate(sorted_bacteria):
+            #     text = font3.render(f"Rank {i+1}: Bacteria ID {bacteria_id}, DNA: {details['dna']}, Lifespan: {details['lifespan']} time steps", True, WHITE)
+            #     screen.blit(text, (5, y_offset + (i+1) * 10))
 
         # updates time step
         pygame.display.update()
