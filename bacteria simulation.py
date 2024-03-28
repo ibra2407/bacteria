@@ -15,12 +15,12 @@ pygame.init()
 WIDTH, HEIGHT = 800,800 # default 800,800
 TILE_SIZE = 5
 
-# # Calculate SIM_BOUND widths dynamically
-# LEFT_SIM_BOUND_WIDTH = WIDTH // 4  # Width of the left SIM_BOUND (in pixels)
-# RIGHT_SIM_BOUND_WIDTH = WIDTH - LEFT_SIM_BOUND_WIDTH  # Width of the right SIM_BOUND (in pixels)
+# # if need to bound the simulation area use this
+# LEFT_SIM_BOUND_WIDTH = WIDTH // 4  # width of the left SIM_BOUND (in pixels)
+# RIGHT_SIM_BOUND_WIDTH = WIDTH - LEFT_SIM_BOUND_WIDTH  # width of the right SIM_BOUND (in pixels)
 
-# GRID_WIDTH = RIGHT_SIM_BOUND_WIDTH // TILE_SIZE  # Width of the grid (in tiles)
-# GRID_HEIGHT = HEIGHT // TILE_SIZE  # Height of the grid (in tiles)
+# GRID_WIDTH = RIGHT_SIM_BOUND_WIDTH // TILE_SIZE  # width of the grid (in no. of tiles)
+# GRID_HEIGHT = HEIGHT // TILE_SIZE  # weight of the grid (in no. of tiles)
 
 GRID_WIDTH = WIDTH // TILE_SIZE
 GRID_HEIGHT = HEIGHT // TILE_SIZE
@@ -43,14 +43,12 @@ PURPLE = (255, 0, 255)
 # ---- ---- ---- ---- bacteria class ---- ---- ---- ----
 class Bacteria:
 
-    # BACTERIA SIMULATION PARAMS; access in class functions as Bacteria.----
+    # BACTERIA SIMULATION PARAMS; access in class functions as Bacteria.
     EXISTING_IDS = set()  # store generated IDs, ensuring they dont repeat
     START_POWER = 8 # number of 1s allowed in dna string at the start; "power" of each cell at the start shd be low and get higher as generations go
     # can start with half of 24 (total)
     MAX_POWER = 18 # can only choose to max out 4 out of 6 traits; 10% chance of a child to increase its power
-
     MATING_COOLDOWN = 3000
-    
     # insert others to change "global" params for all bacteria
 
     def __init__(self, x, y, isChild = False, dna = None):
@@ -191,7 +189,7 @@ class Bacteria:
 
                         # excited case
                         if self.BloodlustOn or self.MatingOn:
-                            print(f"Bacteria {self.colour_name} is on the chase for bacteria {bacteria.colour_name}")
+                            # print(f"Bacteria {self.colour_name} is on the chase for bacteria {bacteria.colour_name}")
                             self.chase(direction)
 
                             # hunting case
@@ -215,7 +213,7 @@ class Bacteria:
         next_positions.remove((self.x, self.y))  # remove current position for self-collision check
         if (self.x, self.y) in next_positions:
             # collision (overlap) detected
-            print(f"collision at {self.x},{self.y}")
+            # print(f"collision at {self.x},{self.y}")
             # randomly move to an empty adjacent cell within 1 block of collision cell
             adjacent_cells = [(x, y) for x in range(self.x - 1, self.x + 2) for y in range(self.y - 1, self.y + 2) if (x, y) not in next_positions]
             if adjacent_cells:
@@ -326,8 +324,8 @@ class Bacteria:
                         self.hp += round(absorb_damage,2)
                         bacteria.hp -= absorb_damage
 
-                    print(f"Bacteria {self.colour_name} bit Bacteria {bacteria.colour_name} at position {bacteria.x},{bacteria.y}.")
-                    print(f"After absorbing: {self.colour_name} HP: {self.hp}, {bacteria.colour_name} HP: {bacteria.hp}")
+                    # print(f"Bacteria {self.colour_name} bit Bacteria {bacteria.colour_name} at position {bacteria.x},{bacteria.y}.")
+                    # print(f"After absorbing: {self.colour_name} HP: {self.hp}, {bacteria.colour_name} HP: {bacteria.hp}")
 
                     # check if the other bacteria's HP is zero after absorption
                     if bacteria.hp <= 0:
@@ -491,44 +489,34 @@ bacteria_list = []
 deaths = 0
 
 # analytics section
-# Add this global variable at the beginning of your code
-MAX_DATA_POINTS = 10000  # Maximum number of data points to display on the graph
+MAX_DATA_POINTS = 10000  # maximum number of data points to display on the graph
 
-# Add this function to update the graph
-# Add this function to update the graph
-# Add this function to update the graph
 def update_graph(bacteria_count_history, deaths_history):
     plt.clf()  # Clear the previous plot
 
-    # Plot bacteria count over time
+    # plot bacteria count over time
     plt.subplot(2, 1, 1)
     plt.plot(bacteria_count_history, color='blue')
     plt.title('Bacteria Count Over Time')
     plt.xlabel('Time Step')
     plt.ylabel('Bacteria Count')
 
-    # Add the current bacteria count as a dot at the most recent point
+    # ddd the current bacteria count as a dot at the most recent point
     current_bacteria_count = len(bacteria_list)
     plt.scatter(len(bacteria_count_history) - 1, current_bacteria_count, color='red', label=f'Current Bacteria Count: {current_bacteria_count}')
     plt.legend()
 
-    # Display the current count at a fixed corner of the graph
-    # plt.text(0.02, 0.95, f'Current Bacteria Count: {current_bacteria_count}', transform=plt.gca().transAxes, color='red')
-
-    # Plot deaths over time
+    # plot death count over time
     plt.subplot(2, 1, 2)
     plt.plot(deaths_history, color='red')
     plt.title('Deaths Over Time')
     plt.xlabel('Time Step')
     plt.ylabel('Deaths')
 
-    # Add the current death count as a dot at the most recent point
+    # add the current death count as a dot at the most recent point
     current_deaths = deaths
     plt.scatter(len(deaths_history) - 1, current_deaths, color='blue', label=f'Current Death Count: {current_deaths}')
     plt.legend()
-
-    # Display the current count at a fixed corner of the graph
-    # plt.text(0.02, 0.95, f'Current Death Count: {current_deaths}', transform=plt.gca().transAxes, color='blue')
 
     plt.tight_layout()  # Adjust layout to prevent overlap
     plt.draw()
@@ -541,7 +529,7 @@ def main():
     global bacteria_list
     INIT_NUM_BACTERIA = 40
 
-    # Inside your main() function, initialize data lists to store history
+    # initialize data lists to store history
     bacteria_count_history = []
     deaths_history = []
 
@@ -592,21 +580,21 @@ def main():
         deaths_count = font2.render(f"Death count: {deaths}", True, WHITE)
         screen.blit(deaths_count, (160,10))
 
-        # Update history lists
+        # update history lists
         bacteria_count_history.append(len(bacteria_list))
         deaths_history.append(deaths)
 
-        # Limit history lists to a maximum number of data points
+        # limit history lists to a maximum number of data points
         if len(bacteria_count_history) > MAX_DATA_POINTS:
             bacteria_count_history = bacteria_count_history[-MAX_DATA_POINTS:]
         if len(deaths_history) > MAX_DATA_POINTS:
             deaths_history = deaths_history[-MAX_DATA_POINTS:]
 
-        # Update the graph if flag is True and bacteria list is not empty
+        # update the graph if flag is True and bacteria list is not empty
         if update_graph_flag and len(bacteria_list) > 0:
             update_graph(bacteria_count_history, deaths_history)
 
-        # Stop updating graph if bacteria list is empty
+        # stop updating graph if bacteria list is empty
         if len(bacteria_list) == 0:
             update_graph_flag = False
 
@@ -635,29 +623,24 @@ def main():
                 text_trait = font3.render(f"{trait}: {value}", True, WHITE)
                 screen.blit(text_trait, (10, y_offset + (i+2)*gap))
             
-            # Print if the champion bacteria is a child or not
+            # print if the champion bacteria is a child or not
             child_text = "Child" if champion_details['isChild']==True else "not a child"
             text_child = font3.render(f"Champion is a {child_text}", True, WHITE)
             screen.blit(text_child, (10, y_offset + (i + 3) * gap))
 
-            # Display top 10 bacteria with longest lifespans
+            # display top 10 bacteria with longest lifespans
             ranking_text = font3.render("Top 10 Ranking of Bacteria according to Lifespan:", True, WHITE)
             screen.blit(ranking_text, (20, y_offset + (i + 4) * gap))
 
             for j, (bacteria_id, details) in enumerate(sorted_bacteria[:10], start=1):
-                # Construct text for the current bacteria
                 text_rank = f"{j}. Lifespan: {details['lifespan']}, {'Child' if details['isChild'] else 'NotChild'}"
                 for trait, value in details['traits'].items():
                     text_rank += f", {trait}: {value}"
                 
-                # Render and display the text
+                # render and display the text
                 text_rank_rendered = font3.render(text_rank, True, WHITE)
                 screen.blit(text_rank_rendered, (20, y_offset + (j+9) * gap))
             
-            
-
-            
-
         # updates time step
         pygame.display.update()
 
