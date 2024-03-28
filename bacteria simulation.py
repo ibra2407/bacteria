@@ -7,11 +7,11 @@ import math
 pygame.init()
 
 # pygame screen elements
-WIDTH, HEIGHT = 300,300 # default 800,800
+WIDTH, HEIGHT = 800,800 # default 800,800
 TILE_SIZE = 10
 GRID_WIDTH = WIDTH // TILE_SIZE
 GRID_HEIGHT = HEIGHT // TILE_SIZE
-FPS = 10 # clock ticks {FPS} times a real second
+FPS = 60 # clock ticks {FPS} times a real second
 
 # simple RGB colours
 BLACK = (0, 0, 0)
@@ -40,7 +40,7 @@ class Bacteria:
     
     # insert others to change "global" params for all bacteria
 
-    def __init__(self, x, y, isChild = False):
+    def __init__(self, x, y, isChild = False, dna = None):
 
         # current coordinate
         self.x = x
@@ -66,7 +66,7 @@ class Bacteria:
         if self.isChild == False:
             self.dna = self.generate_dna(Bacteria.START_POWER)
         else:
-            self.dna = 24*"0"
+            self.dna = dna
 
         # decode genetic string into traits
         self.traits = {
@@ -90,7 +90,7 @@ class Bacteria:
 
         self.legs = self.traits['legs']
 
-        self.hp = max(200, self.traits['maxHP']*200) # start with 80% hp so dont spawn in mating mood
+        self.hp = 0.8*max(200, self.traits['maxHP']*200) # start with 80% hp so dont spawn in mating mood
         self.maxHP = max(200, self.traits['maxHP']*200) # need a separate variable; self.hp deducts stuff
 
         # Bacteria STATES here
@@ -155,7 +155,7 @@ class Bacteria:
             if prob_hunt > 0.9:
                 self.BloodlustOn = True
                 self.MatingOn = False
-            if prob_mate > 0.9:
+            if prob_mate > 0.8:
                 self.BloodlustOn = False
                 self.MatingOn = True
             if prob_movement > 0.6: # might require balancing
@@ -187,7 +187,7 @@ class Bacteria:
                             
                             # mating case
                             if self.MatingOn:
-                                if prob_mate > 0.9:
+                                if prob_mate > 0.5:
                                     self.mate(bacteria_list)
                             
                             
@@ -331,11 +331,18 @@ class Bacteria:
                     current_time = pygame.time.get_ticks()
                     if current_time - self.last_mate_time >= Bacteria.MATING_COOLDOWN:
                         # Identify highest trait values for both parents
-                        self_highest_trait = max(self.traits.items(), key=lambda x: x[1])
-                        other_highest_trait = max(bacteria.traits.items(), key=lambda x: x[1])
+                        self_strongest_trait = max(self.traits.items(), key=lambda x: x[1])
+                        other_strongest_trait = max(bacteria.traits.items(), key=lambda x: x[1])
 
                         # Child inherits both parents' strongest traits
-                        child_traits = {self_highest_trait[0]: self_highest_trait[1], other_highest_trait[0]: other_highest_trait[1]}
+                        child_traits = {self_strongest_trait[0]: self_strongest_trait[1], other_strongest_trait[0]: other_strongest_trait[1]}
+
+                        # Child DNA initialization
+                        child_dna = '0' * 24  # Start with all 0s
+
+                        # Slot in parents' strongest traits
+                        child_dna = child_dna[:self_strongest_trait[1]] + self.dna[self_strongest_trait[1]:self_strongest_trait[1] + 4] + child_dna[self_strongest_trait[1] + 4:]
+                        child_dna = child_dna[:other_strongest_trait[1]] + bacteria.dna[other_strongest_trait[1]:other_strongest_trait[1] + 4] + child_dna[other_strongest_trait[1] + 4:]
 
                         # Calculate total number of 1s in parents' DNA
                         total_ones_self = self.dna.count('1')
@@ -350,12 +357,17 @@ class Bacteria:
                         # Ensure child_total_ones does not exceed MAX_POWER
                         child_total_ones = min(child_total_ones, Bacteria.MAX_POWER)
 
-                        # Allocate remaining 1s randomly while maintaining total_ones
-                        child_dna = ''.join(['1' if i < child_total_ones else '0' for i in range(child_total_ones)])
+                        # Remaining ones available to be slotted in
+                        remaining_ones = child_total_ones - child_dna.count('1')
+
+                        # Randomly slot in remaining 1s into non-strongest trait portions
+                        for i in range(len(child_dna)):
+                            if child_dna[i] == '0' and remaining_ones > 0:
+                                child_dna = child_dna[:i] + '1' + child_dna[i + 1:]
+                                remaining_ones -= 1
 
                         # Create child with inherited traits and DNA
-                        child = Bacteria(self.x, self.y, isChild=True)
-                        child.dna = child_dna
+                        child = Bacteria(self.x, self.y, isChild=True, dna = child_dna)
                         # Child should spawn where the parents mated
                         child.x = (self.x + bacteria.x) // 2
                         child.y = (self.y + bacteria.y) // 2
@@ -367,6 +379,7 @@ class Bacteria:
 
         self.MatingOn = False
         bacteria.MatingOn = False
+
 
     # inheritance logic - to get dna from mate() and pass it to inherit(), which will set the child bacteria new dna
     def inherit(self, parent1, parent2):
@@ -449,7 +462,8 @@ deaths = 0
 # main pygame program
 def main():
     global bacteria_list
-    INIT_NUM_BACTERIA = 3
+    INIT_NUM_BACTERIA = 20
+    
     running = True
 
     # create initial bacteria
