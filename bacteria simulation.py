@@ -1,3 +1,21 @@
+# TODO
+'''
+Main Logic:
+1. run function, investigate "blooming" of population, find out why child always dies so fast
+2. photosynthesis - sunlight zones
+3. play with parameters (ranges, values based on traits)
+
+Analysis:
+1. add init number as line on graph
+2. return output properly in a list, try show steady state parameters (need to find this too)
+3. link to pt2 of SMA - burn in period, true expected steady state given a set of parameters
+4. general observations
+
+Aesthetics:
+1. UI design of bacteria & background (graphics)
+2. menu screen (to set parameters or smth)
+'''
+
 # install these libraries
 import pygame
 import random
