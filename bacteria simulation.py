@@ -12,18 +12,18 @@ from tkinter import scrolledtext
 pygame.init()
 
 # pygame screen elements
-WIDTH, HEIGHT = 1200,800 # default 800,800
+WIDTH, HEIGHT = 800,800 # default 800,800
 TILE_SIZE = 5
 
-# Calculate SIM_BOUND widths dynamically
-LEFT_SIM_BOUND_WIDTH = WIDTH // 4  # Width of the left SIM_BOUND (in pixels)
-RIGHT_SIM_BOUND_WIDTH = WIDTH - LEFT_SIM_BOUND_WIDTH  # Width of the right SIM_BOUND (in pixels)
+# # Calculate SIM_BOUND widths dynamically
+# LEFT_SIM_BOUND_WIDTH = WIDTH // 4  # Width of the left SIM_BOUND (in pixels)
+# RIGHT_SIM_BOUND_WIDTH = WIDTH - LEFT_SIM_BOUND_WIDTH  # Width of the right SIM_BOUND (in pixels)
 
-GRID_WIDTH = RIGHT_SIM_BOUND_WIDTH // TILE_SIZE  # Width of the grid (in tiles)
-GRID_HEIGHT = HEIGHT // TILE_SIZE  # Height of the grid (in tiles)
+# GRID_WIDTH = RIGHT_SIM_BOUND_WIDTH // TILE_SIZE  # Width of the grid (in tiles)
+# GRID_HEIGHT = HEIGHT // TILE_SIZE  # Height of the grid (in tiles)
 
-# GRID_WIDTH = WIDTH // TILE_SIZE
-# GRID_HEIGHT = HEIGHT // TILE_SIZE
+GRID_WIDTH = WIDTH // TILE_SIZE
+GRID_HEIGHT = HEIGHT // TILE_SIZE
 FPS = 120 # clock ticks {FPS} times a real second
 
 # simple RGB colours
@@ -265,10 +265,10 @@ class Bacteria:
             self.x -= step
             self.y -= step
         # ensures bacteria stays within the grid
-        # self.x = max(0, min(self.x, GRID_WIDTH - 1))
-        # self.y = max(0, min(self.y, GRID_HEIGHT - 1))
-        self.x = max(LEFT_SIM_BOUND_WIDTH // TILE_SIZE, min(self.x, (WIDTH - 1) // TILE_SIZE))
-        self.y = max(0, min(self.y, (HEIGHT - 1) // TILE_SIZE))
+        self.x = max(0, min(self.x, GRID_WIDTH - 1))
+        self.y = max(0, min(self.y, GRID_HEIGHT - 1))
+        # self.x = max(LEFT_SIM_BOUND_WIDTH // TILE_SIZE, min(self.x, (WIDTH - 1) // TILE_SIZE))
+        # self.y = max(0, min(self.y, (HEIGHT - 1) // TILE_SIZE))
 
     def chase(self, direction):
         step = max(1, math.floor(self.legs/2))
@@ -475,8 +475,8 @@ def draw_grid():
         pygame.draw.line(screen,BLACK,start_pos=(col*TILE_SIZE,0),end_pos=(col*TILE_SIZE,HEIGHT))
 
 # draw bounding box for bacteria simulation
-def draw_outline():
-    pygame.draw.rect(screen, BLACK, (LEFT_SIM_BOUND_WIDTH, 0, RIGHT_SIM_BOUND_WIDTH, HEIGHT), 2)
+# def draw_outline():
+#     pygame.draw.rect(screen, BLACK, (LEFT_SIM_BOUND_WIDTH, 0, RIGHT_SIM_BOUND_WIDTH, HEIGHT), 2)
 
 # list to store bacteria objects and their lifespan
 bacteria_lifespan = {}
@@ -491,12 +491,62 @@ bacteria_list = []
 deaths = 0
 
 # analytics section
+# Add this global variable at the beginning of your code
+MAX_DATA_POINTS = 10000  # Maximum number of data points to display on the graph
+
+# Add this function to update the graph
+# Add this function to update the graph
+# Add this function to update the graph
+def update_graph(bacteria_count_history, deaths_history):
+    plt.clf()  # Clear the previous plot
+
+    # Plot bacteria count over time
+    plt.subplot(2, 1, 1)
+    plt.plot(bacteria_count_history, color='blue')
+    plt.title('Bacteria Count Over Time')
+    plt.xlabel('Time Step')
+    plt.ylabel('Bacteria Count')
+
+    # Add the current bacteria count as a dot at the most recent point
+    current_bacteria_count = len(bacteria_list)
+    plt.scatter(len(bacteria_count_history) - 1, current_bacteria_count, color='red', label=f'Current Bacteria Count: {current_bacteria_count}')
+    plt.legend()
+
+    # Display the current count at a fixed corner of the graph
+    # plt.text(0.02, 0.95, f'Current Bacteria Count: {current_bacteria_count}', transform=plt.gca().transAxes, color='red')
+
+    # Plot deaths over time
+    plt.subplot(2, 1, 2)
+    plt.plot(deaths_history, color='red')
+    plt.title('Deaths Over Time')
+    plt.xlabel('Time Step')
+    plt.ylabel('Deaths')
+
+    # Add the current death count as a dot at the most recent point
+    current_deaths = deaths
+    plt.scatter(len(deaths_history) - 1, current_deaths, color='blue', label=f'Current Death Count: {current_deaths}')
+    plt.legend()
+
+    # Display the current count at a fixed corner of the graph
+    # plt.text(0.02, 0.95, f'Current Death Count: {current_deaths}', transform=plt.gca().transAxes, color='blue')
+
+    plt.tight_layout()  # Adjust layout to prevent overlap
+    plt.draw()
+    plt.pause(0.001)
+
 
 
 # main pygame program
 def main():
     global bacteria_list
     INIT_NUM_BACTERIA = 40
+
+    # Inside your main() function, initialize data lists to store history
+    bacteria_count_history = []
+    deaths_history = []
+
+    # flag to stop graph
+    update_graph_flag = True
     
     running = True
 
@@ -520,7 +570,7 @@ def main():
         # pygame.draw.rect(screen, (255, 0, 0), highlight_rect, 0)
         # here we use draw_grid to draw the positions on top of the grid
         # draw_grid()
-        draw_outline()
+        # draw_outline()
 
         # draw and move bacteria 
         for bacteria in bacteria_list:
@@ -541,6 +591,24 @@ def main():
         # death count
         deaths_count = font2.render(f"Death count: {deaths}", True, WHITE)
         screen.blit(deaths_count, (160,10))
+
+        # Update history lists
+        bacteria_count_history.append(len(bacteria_list))
+        deaths_history.append(deaths)
+
+        # Limit history lists to a maximum number of data points
+        if len(bacteria_count_history) > MAX_DATA_POINTS:
+            bacteria_count_history = bacteria_count_history[-MAX_DATA_POINTS:]
+        if len(deaths_history) > MAX_DATA_POINTS:
+            deaths_history = deaths_history[-MAX_DATA_POINTS:]
+
+        # Update the graph if flag is True and bacteria list is not empty
+        if update_graph_flag and len(bacteria_list) > 0:
+            update_graph(bacteria_count_history, deaths_history)
+
+        # Stop updating graph if bacteria list is empty
+        if len(bacteria_list) == 0:
+            update_graph_flag = False
 
         # # end of sim status
         if len(bacteria_list) == 0:
@@ -585,13 +653,10 @@ def main():
                 # Render and display the text
                 text_rank_rendered = font3.render(text_rank, True, WHITE)
                 screen.blit(text_rank_rendered, (20, y_offset + (j+9) * gap))
+            
+            
 
-            # ranking_text = font3.render("Ranking of Bacteria:", True, WHITE)
-            # screen.blit(ranking_text, (10, y_offset))
-
-            # for i, (bacteria_id, details) in enumerate(sorted_bacteria):
-            #     text = font3.render(f"Rank {i+1}: Bacteria ID {bacteria_id}, DNA: {details['dna']}, Lifespan: {details['lifespan']} time steps", True, WHITE)
-            #     screen.blit(text, (5, y_offset + (i+1) * 10))
+            
 
         # updates time step
         pygame.display.update()
