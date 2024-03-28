@@ -1,22 +1,23 @@
 # TODO
 '''
+Priorities: (1), (2), (3)
 Main Logic:
-1. run function, investigate "blooming" of population, find out why child always dies so fast
-2. photosynthesis - sunlight zones
-3. play with parameters (ranges, values based on traits)
+1. run function, investigate "blooming" of population, find out why child always dies so fast (2)
+2. photosynthesis - sunlight zones (1)
+3. play with parameters (ranges, values based on traits) (3)
 
 Analysis:
-1. add init number as line on graph
-2. return output properly in a list, try show steady state parameters (need to find this too)
-3. link to pt2 of SMA - burn in period, true expected steady state given a set of parameters
-4. general observations
+1. add init number as line on graph (1)
+2. return output properly in a list, try show steady state parameters (need to find this too), link to pt2 of SMA - burn in period, true expected steady state given a set of parameters (2)
+3. general observations
 
 Aesthetics:
-1. UI design of bacteria & background (graphics)
-2. menu screen (to set parameters or smth)
+1. UI design of bacteria & background (graphics) (2)
+2. menu screen (to set parameters or smth) (2)
 
 Performance:
-1. make the matplotlib a bit smoother and can actually use to see shit
+1. make the matplotlib a bit smoother and can actually use to see shit (3)
+2. limit number of bacteria
 '''
 
 # install these libraries
@@ -32,9 +33,12 @@ from tkinter import scrolledtext
 # initialise a pygame instance
 pygame.init()
 
+# global variable to set number of bact in simulation
+sim_num_bact = 20
+
 # pygame screen elements
 WIDTH, HEIGHT = 800,800 # default 800,800
-TILE_SIZE = 5
+TILE_SIZE = 10
 
 # # if need to bound the simulation area use this
 # LEFT_SIM_BOUND_WIDTH = WIDTH // 4  # width of the left SIM_BOUND (in pixels)
@@ -362,52 +366,52 @@ class Bacteria:
             if bacteria != self and abs(self.x - bacteria.x) <= pheromone_range and abs(self.y - bacteria.y) <= pheromone_range: # only within range
                 # both must be in mating mood
                 if self.MatingOn and bacteria.MatingOn:
-                    # Check cooldown before mating
+                    # check cooldown before mating
                     current_time = pygame.time.get_ticks()
                     if current_time - self.last_mate_time >= Bacteria.MATING_COOLDOWN:
-                        # Identify highest trait values for both parents
+                        # identify highest trait values for both parents
                         self_strongest_trait = max(self.traits.items(), key=lambda x: x[1])
                         other_strongest_trait = max(bacteria.traits.items(), key=lambda x: x[1])
 
-                        # Child inherits both parents' strongest traits
-                        child_traits = {self_strongest_trait[0]: self_strongest_trait[1], other_strongest_trait[0]: other_strongest_trait[1]}
+                        # child inherits both parents' strongest traits
+                        # child_traits = {self_strongest_trait[0]: self_strongest_trait[1], other_strongest_trait[0]: other_strongest_trait[1]}
 
-                        # Child DNA initialization
-                        child_dna = '0' * 24  # Start with all 0s
+                        # child DNA initialization
+                        child_dna = '0' * 24  # start with all 0s
 
-                        # Slot in parents' strongest traits
+                        # slot in parents' strongest traits
                         child_dna = child_dna[:self_strongest_trait[1]] + self.dna[self_strongest_trait[1]:self_strongest_trait[1] + 4] + child_dna[self_strongest_trait[1] + 4:]
                         child_dna = child_dna[:other_strongest_trait[1]] + bacteria.dna[other_strongest_trait[1]:other_strongest_trait[1] + 4] + child_dna[other_strongest_trait[1] + 4:]
 
-                        # Calculate total number of 1s in parents' DNA
+                        # calculate total number of 1s in parents' DNA
                         total_ones_self = self.dna.count('1')
                         total_ones_other = bacteria.dna.count('1')
 
-                        # Determine number of 1s in child's DNA
+                        # determine number of 1s in child's DNA
                         child_total_ones = max(total_ones_self, total_ones_other)
-                        # There's a 10% chance for an extra 1 in child's DNA
+                        # there's a 10% chance for an extra 1 in child's DNA
                         if random.uniform(0, 1) < 0.1:
                             child_total_ones += 1
 
-                        # Ensure child_total_ones does not exceed MAX_POWER
+                        # ensure child_total_ones does not exceed MAX_POWER
                         child_total_ones = min(child_total_ones, Bacteria.MAX_POWER)
 
-                        # Remaining ones available to be slotted in
+                        # remaining ones available to be slotted in
                         remaining_ones = child_total_ones - child_dna.count('1')
 
-                        # Randomly slot in remaining 1s into non-strongest trait portions
+                        # randomly slot in remaining 1s into non-strongest trait portions
                         for i in range(len(child_dna)):
                             if child_dna[i] == '0' and remaining_ones > 0:
                                 child_dna = child_dna[:i] + '1' + child_dna[i + 1:]
                                 remaining_ones -= 1
 
-                        # Create child with inherited traits and DNA
+                        # create child with inherited traits and DNA
                         child = Bacteria(self.x, self.y, isChild=True, dna = child_dna)
                         # Child should spawn where the parents mated
                         child.x = (self.x + bacteria.x) // 2
                         child.y = (self.y + bacteria.y) // 2
 
-                        # Append child to bacteria list
+                        # append child to bacteria list
                         bacteria_list.append(child)
 
                         # parents sacrifice hp to create child
@@ -434,6 +438,7 @@ class Bacteria:
         pass
 
     # ---- FOR PYGAME SCREEN ----
+
     # draws main body
     def draw(self, screen):
         # draw body
@@ -527,6 +532,10 @@ def update_graph(bacteria_count_history, deaths_history):
     plt.scatter(len(bacteria_count_history) - 1, current_bacteria_count, color='red', label=f'Current Bacteria Count: {current_bacteria_count}')
     plt.legend()
 
+    # Add initial bacteria count as a horizontal dotted line
+    plt.axhline(y=sim_num_bact, color='gray', linestyle='--', label=f'Starting Count: {sim_num_bact}')
+    plt.legend()
+
     # plot death count over time
     plt.subplot(2, 1, 2)
     plt.plot(deaths_history, color='red')
@@ -543,12 +552,10 @@ def update_graph(bacteria_count_history, deaths_history):
     plt.draw()
     plt.pause(0.001)
 
-
-
 # main pygame program
 def main():
     global bacteria_list
-    INIT_NUM_BACTERIA = 40
+    INIT_NUM_BACTERIA = sim_num_bact
 
     # initialize data lists to store history
     bacteria_count_history = []
