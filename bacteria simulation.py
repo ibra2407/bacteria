@@ -35,6 +35,8 @@ class Bacteria:
     START_POWER = 8 # number of 1s allowed in dna string at the start; "power" of each cell at the start shd be low and get higher as generations go
     # can start with half of 24 (total)
     MAX_POWER = 18 # can only choose to max out 4 out of 6 traits; 10% chance of a child to increase its power
+
+    MATING_COOLDOWN = 2000
     
     # insert others to change "global" params for all bacteria
 
@@ -46,6 +48,8 @@ class Bacteria:
 
         # lifespan to measure life
         self.lifespan = 0
+
+        self.last_mate_time = 0
 
         # generate a unique id for the bacteria
         while True:
@@ -318,46 +322,49 @@ class Bacteria:
     def mate(self, bacteria_list):
         # set the range
         pheromone_range = 4
-        one_child = 0
         for bacteria in bacteria_list:
             # check if any other bacteria is within mating range
             if bacteria != self and abs(self.x - bacteria.x) <= pheromone_range and abs(self.y - bacteria.y) <= pheromone_range: # only within range
                 # both must be in mating mood
                 if self.MatingOn and bacteria.MatingOn:
-                    # Identify highest trait values for both parents
-                    self_highest_trait = max(self.traits.items(), key=lambda x: x[1])
-                    other_highest_trait = max(bacteria.traits.items(), key=lambda x: x[1])
+                    # Check cooldown before mating
+                    current_time = pygame.time.get_ticks()
+                    if current_time - self.last_mate_time >= Bacteria.MATING_COOLDOWN:
+                        # Identify highest trait values for both parents
+                        self_highest_trait = max(self.traits.items(), key=lambda x: x[1])
+                        other_highest_trait = max(bacteria.traits.items(), key=lambda x: x[1])
 
-                    # Child inherits both parents' strongest traits
-                    child_traits = {self_highest_trait[0]: self_highest_trait[1], other_highest_trait[0]: other_highest_trait[1]}
+                        # Child inherits both parents' strongest traits
+                        child_traits = {self_highest_trait[0]: self_highest_trait[1], other_highest_trait[0]: other_highest_trait[1]}
 
-                    # Calculate total number of 1s in parents' DNA
-                    total_ones_self = self.dna.count('1')
-                    total_ones_other = bacteria.dna.count('1')
+                        # Calculate total number of 1s in parents' DNA
+                        total_ones_self = self.dna.count('1')
+                        total_ones_other = bacteria.dna.count('1')
 
-                    # Determine number of 1s in child's DNA
-                    child_total_ones = max(total_ones_self, total_ones_other)
-                    # There's a 10% chance for an extra 1 in child's DNA
-                    if random.uniform(0, 1) < 0.1:
-                        child_total_ones += 1
+                        # Determine number of 1s in child's DNA
+                        child_total_ones = max(total_ones_self, total_ones_other)
+                        # There's a 10% chance for an extra 1 in child's DNA
+                        if random.uniform(0, 1) < 0.1:
+                            child_total_ones += 1
 
-                    # Ensure child_total_ones does not exceed MAX_POWER
-                    child_total_ones = min(child_total_ones, Bacteria.MAX_POWER)
+                        # Ensure child_total_ones does not exceed MAX_POWER
+                        child_total_ones = min(child_total_ones, Bacteria.MAX_POWER)
 
-                    # Allocate remaining 1s randomly while maintaining total_ones
-                    child_dna = ''.join(['1' if i < child_total_ones else '0' for i in range(child_total_ones)])
+                        # Allocate remaining 1s randomly while maintaining total_ones
+                        child_dna = ''.join(['1' if i < child_total_ones else '0' for i in range(child_total_ones)])
 
-                    # Create child with inherited traits and DNA
-                    child = Bacteria(self.x, self.y, isChild=True)
-                    child.dna = child_dna
-                    # Child should spawn where the parents mated
-                    child.x = (self.x + bacteria.x) // 2
-                    child.y = (self.y + bacteria.y) // 2
+                        # Create child with inherited traits and DNA
+                        child = Bacteria(self.x, self.y, isChild=True)
+                        child.dna = child_dna
+                        # Child should spawn where the parents mated
+                        child.x = (self.x + bacteria.x) // 2
+                        child.y = (self.y + bacteria.y) // 2
 
-                    if one_child == 0:
                         # Append child to bacteria list
                         bacteria_list.append(child)
-                    one_child = 1
+
+                        self.last_mate_time = current_time
+
         self.MatingOn = False
         bacteria.MatingOn = False
 
@@ -442,7 +449,7 @@ deaths = 0
 # main pygame program
 def main():
     global bacteria_list
-    INIT_NUM_BACTERIA = 2
+    INIT_NUM_BACTERIA = 3
     running = True
 
     # create initial bacteria
