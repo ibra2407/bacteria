@@ -34,10 +34,10 @@ from tkinter import scrolledtext
 pygame.init()
 
 # global variable to set number of bact in simulation
-sim_num_bact = 20
+sim_num_bact = 10
 
 # pygame screen elements
-WIDTH, HEIGHT = 800,800 # default 800,800
+WIDTH, HEIGHT = 400,400 # default 800,800
 TILE_SIZE = 10
 
 # # if need to bound the simulation area use this
@@ -349,8 +349,8 @@ class Bacteria:
                         self.hp += round(absorb_damage,2)
                         bacteria.hp -= absorb_damage
 
-                    # print(f"Bacteria {self.colour_name} bit Bacteria {bacteria.colour_name} at position {bacteria.x},{bacteria.y}.")
-                    # print(f"After absorbing: {self.colour_name} HP: {self.hp}, {bacteria.colour_name} HP: {bacteria.hp}")
+                    print(f"Bacteria {self.colour_name} bit Bacteria {bacteria.colour_name} at position {bacteria.x},{bacteria.y}.")
+                    print(f"After absorbing: {self.colour_name} HP: {self.hp}, {bacteria.colour_name} HP: {bacteria.hp}")
 
                     # check if the other bacteria's HP is zero after absorption
                     if bacteria.hp <= 0:
@@ -419,6 +419,8 @@ class Bacteria:
                         bacteria.hp -= 50
 
                         self.last_mate_time = current_time
+
+                        print(f"Bacteria {self.colour_name} mated with {bacteria.colour_name} and gave birth to {child.colour_name}")
 
         self.MatingOn = False
         bacteria.MatingOn = False
@@ -644,17 +646,20 @@ def main():
             champion_id, champion_details = sorted_bacteria[0]
             text_dna = font3.render(f"DNA of the champion bacteria: {champion_details['dna']}", True, WHITE)
             screen.blit(text_dna, (10, y_offset))
+            print(f"Longest living Bacteria has DNA {champion_details['dna']}")
 
             traits_text = font3.render("Trait values:", True, WHITE)
             screen.blit(traits_text, (10, y_offset + gap))
             for i, (trait, value) in enumerate(champion_details['traits'].items()):
                 text_trait = font3.render(f"{trait}: {value}", True, WHITE)
                 screen.blit(text_trait, (10, y_offset + (i+2)*gap))
+                print(f"Champion bacteria traits: {trait}: {value}")
             
             # print if the champion bacteria is a child or not
             child_text = "Child" if champion_details['isChild']==True else "not a child"
             text_child = font3.render(f"Champion is a {child_text}", True, WHITE)
             screen.blit(text_child, (10, y_offset + (i + 3) * gap))
+            print(f"Champion is {child_text}")
 
             # display top 10 bacteria with longest lifespans
             ranking_text = font3.render("Top 10 Ranking of Bacteria according to Lifespan:", True, WHITE)
@@ -668,6 +673,16 @@ def main():
                 # render and display the text
                 text_rank_rendered = font3.render(text_rank, True, WHITE)
                 screen.blit(text_rank_rendered, (20, y_offset + (j+9) * gap))
+            
+            print(f"Top 10 rankings:")
+            for j, (bacteria_id, details) in enumerate(sorted_bacteria[:10], start=1):
+                print(f"{j}. Lifespan: {details['lifespan']}, {'Child' if details['isChild'] else 'NotChild'}, DNA: {details['dna']}")
+                for trait, value in details['traits'].items():
+                    print(f"   {trait}: {value}")
+            
+            break
+
+                        
             
         # updates time step
         pygame.display.update()
