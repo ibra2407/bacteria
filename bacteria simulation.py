@@ -2,9 +2,10 @@
 '''
 Priorities: (1), (2), (3)
 Main Logic:
-1. run function, investigate "blooming" of population, find out why child always dies so fast (2)
+1. run behaviour (1) - 20-80% hp will run if detect BL if self is not BL
 2. photosynthesis - sunlight zones (1)
 3. play with parameters (ranges, values based on traits) (3)
+4. absorb function fix -> enable any bacteria to eat each other; only if BL then rules change
 
 Analysis:
 1. add init number as line on graph (1)
@@ -18,6 +19,10 @@ Aesthetics:
 Performance:
 1. make the matplotlib a bit smoother and can actually use to see shit (3)
 2. limit number of bacteria
+
+Completed:
+1. investigate "blooming" of population, find out why child always dies so fast (2) - mating function issue
+2. Mating fucntion fixed but still able to produce inferior offsrping with less power than parents somehow (not intended)
 '''
 
 # install these libraries
@@ -369,67 +374,101 @@ class Bacteria:
                     # check cooldown before mating
                     current_time = pygame.time.get_ticks()
                     if current_time - self.last_mate_time >= Bacteria.MATING_COOLDOWN:
-                        # identify highest trait values for both parents
-                        self_strongest_trait = max(self.traits.items(), key=lambda x: x[1])
-                        other_strongest_trait = max(bacteria.traits.items(), key=lambda x: x[1])
+                        child_dna = self.inherit(self.dna, bacteria.dna)
+                        if child_dna == "":
+                            return
+                        else:
+                            # create child with inherited traits and DNA
+                            child = Bacteria(self.x, self.y, isChild=True, dna = child_dna)
+                            # child should spawn where the parents mated
+                            child.x = (self.x + bacteria.x) // 2
+                            child.y = (self.y + bacteria.y) // 2
+                            # child shd start with half hp
+                            child.hp = 0.5*child.maxHP
 
-                        # child inherits both parents' strongest traits
-                        # child_traits = {self_strongest_trait[0]: self_strongest_trait[1], other_strongest_trait[0]: other_strongest_trait[1]}
+                            # append child to bacteria list
+                            bacteria_list.append(child)
 
-                        # child DNA initialization
-                        child_dna = '0' * 24  # start with all 0s
+                            # parents sacrifice 10% hp to create child
+                            self.hp = 0.9*self.hp
+                            bacteria.hp = 0.9*bacteria.hp
 
-                        # slot in parents' strongest traits
-                        child_dna = child_dna[:self_strongest_trait[1]] + self.dna[self_strongest_trait[1]:self_strongest_trait[1] + 4] + child_dna[self_strongest_trait[1] + 4:]
-                        child_dna = child_dna[:other_strongest_trait[1]] + bacteria.dna[other_strongest_trait[1]:other_strongest_trait[1] + 4] + child_dna[other_strongest_trait[1] + 4:]
+                            self.last_mate_time = current_time
 
-                        # calculate total number of 1s in parents' DNA
-                        total_ones_self = self.dna.count('1')
-                        total_ones_other = bacteria.dna.count('1')
-
-                        # determine number of 1s in child's DNA
-                        child_total_ones = max(total_ones_self, total_ones_other)
-                        # there's a 10% chance for an extra 1 in child's DNA
-                        if random.uniform(0, 1) < 0.1:
-                            child_total_ones += 1
-
-                        # ensure child_total_ones does not exceed MAX_POWER
-                        child_total_ones = min(child_total_ones, Bacteria.MAX_POWER)
-
-                        # remaining ones available to be slotted in
-                        remaining_ones = child_total_ones - child_dna.count('1')
-
-                        # randomly slot in remaining 1s into non-strongest trait portions
-                        for i in range(len(child_dna)):
-                            if child_dna[i] == '0' and remaining_ones > 0:
-                                child_dna = child_dna[:i] + '1' + child_dna[i + 1:]
-                                remaining_ones -= 1
-
-                        # create child with inherited traits and DNA
-                        child = Bacteria(self.x, self.y, isChild=True, dna = child_dna)
-                        # Child should spawn where the parents mated
-                        child.x = (self.x + bacteria.x) // 2
-                        child.y = (self.y + bacteria.y) // 2
-
-                        # append child to bacteria list
-                        bacteria_list.append(child)
-
-                        # parents sacrifice hp to create child
-                        self.hp -= 50
-                        bacteria.hp -= 50
-
-                        self.last_mate_time = current_time
-
-                        print(f"Bacteria {self.colour_name} mated with {bacteria.colour_name} and gave birth to {child.colour_name}")
+                            print(f"Bacteria {self.colour_name} mated with {bacteria.colour_name} and gave birth to {child.colour_name}")
 
         self.MatingOn = False
         bacteria.MatingOn = False
 
 
     # inheritance logic - to get dna from mate() and pass it to inherit(), which will set the child bacteria new dna
-    # defined in mate() already, works fine
-    # def inherit(self, parent1, parent2):
-    #     pass
+    # use factory method
+    @staticmethod
+    def inherit(dna1, dna2):
+        # Step 1:
+        # Turn both DNA strings into lists of how many traits there are with each entry being a value
+        dna_trait1 = [int(dna1[i:i+4], 2) for i in range(0, len(dna1), 4)]
+        dna_trait2 = [int(dna2[i:i+4], 2) for i in range(0, len(dna2), 4)]
+
+        # Step 2:
+        # Get the max value
+        max_value1 = max(dna_trait1)
+        max_value2 = max(dna_trait2)
+
+        # Check if the difference in the number of ones between parents is 0 or 1
+        num_ones1 = dna1.count('1')
+        num_ones2 = dna2.count('1')
+        ones_difference = abs(num_ones1 - num_ones2)
+        if ones_difference > 1:
+            return "" # "Parents cannot mate."
+
+        # Step 3:
+        # Directly copy the DNA strings corresponding to the traits of both parents to the child DNA
+        child_dna = ''
+        inherited_indices = set()  # Store indices of inherited trait segments
+        for i in range(len(dna_trait1)):
+            if dna_trait1[i] == max_value1:
+                child_dna += dna1[i*4:i*4+4]
+                inherited_indices.add(i)
+            elif dna_trait2[i] == max_value2:
+                child_dna += dna2[i*4:i*4+4]
+                inherited_indices.add(i)
+            else:
+                child_dna += '0000'  # placeholder for non-max traits
+
+        # Step 4:
+        # Ensure the number of 1s is at least the max of the parents' number of 1s
+        max_ones = max(num_ones1, num_ones2)
+
+        # If child has fewer ones than max of parents, add extra ones
+        child_ones = child_dna.count('1')
+        remaining_ones = max_ones - child_ones
+        
+        # Iterate through the non-inherited portions to add ones
+        for i in range(len(dna_trait1)):
+            if i not in inherited_indices:
+                # If the remaining ones are already added, break the loop
+                if remaining_ones == 0:
+                    break
+                # Add one to the non-inherited portion
+                child_dna = child_dna[:i*4] + '1' + child_dna[i*4+1:]
+                child_ones += 1
+                remaining_ones -= 1
+
+        # Step 5:
+        # With 50% chance, add an extra 1
+        if random.random() < 0.5:
+            index = random.randint(0, len(child_dna) - 1)
+            if index // 4 not in inherited_indices:  # Check if the index is not in an inherited trait segment
+                child_dna = child_dna[:index] + '1' + child_dna[index+1:]
+                child_ones += 1
+
+        # Step 6:
+        # Ensure that the number of 1s in the child does not exceed MAX_POWER
+        if child_ones > Bacteria.MAX_POWER:
+            return "" # "Child is too powerful"
+
+        return child_dna
     
     # running logic against hungry bacteria
     def run(self, bacteria_list):
