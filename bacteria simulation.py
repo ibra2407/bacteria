@@ -2,10 +2,10 @@
 '''
 Priorities: (1), (2), (3)
 Main Logic:
-1. run behaviour (1) - 20-80% hp will run if detect BL if self is not BL
+
 2. photosynthesis - sunlight zones (1)
 3. play with parameters (ranges, values based on traits) (3)
-4. absorb function fix -> enable any bacteria to eat each other; only if BL then rules change
+
 
 Analysis:
 1. add init number as line on graph (1)
@@ -22,7 +22,10 @@ Performance:
 
 Completed:
 1. investigate "blooming" of population, find out why child always dies so fast (2) - mating function issue
-2. Mating fucntion fixed but still able to produce inferior offsrping with less power than parents somehow (not intended)
+2. Mating fucntion fixed
+3. run behaviour (1) - 20-80% hp will run if detect BL if self is not BL
+4. added hp bars
+5. absorb function fix -> enable any bacteria to eat each other; only if BL then rules change
 '''
 
 # install these libraries
@@ -40,9 +43,13 @@ pygame.init()
 
 # global variable to set number of bact in simulation
 sim_num_bact = 10
+# set mating hp threshold
+matingHP = 0.7
+# set bloodlust hp
+bloodHP = 0.3
 
 # pygame screen elements
-WIDTH, HEIGHT = 400,400 # default 800,800
+WIDTH, HEIGHT = 800,800 # default 800,800
 TILE_SIZE = 10
 
 # # if need to bound the simulation area use this
@@ -131,7 +138,7 @@ class Bacteria:
 
         self.legs = self.traits['legs']
 
-        self.hp = 0.8*max(200, self.traits['maxHP']*200) # start with 80% hp so dont spawn in mating mood
+        self.hp = matingHP*max(200, self.traits['maxHP']*200) # start with mating hp so dont spawn in mating mood ( will decrease immediately when they live)
         self.maxHP = max(200, self.traits['maxHP']*200) # need a separate variable; self.hp deducts stuff
 
         # Bacteria STATES here
@@ -184,28 +191,28 @@ class Bacteria:
 
         # when just spawn, sit still for a while
 
-        # # HP > 80%; definitely wants to mate
+        # # HP > matingHP; definitely wants to mate
         # self.MatingOn = True
         # # finds a mate
-        if(self.hp > 0.8*self.maxHP):
+        if(self.hp > matingHP*self.maxHP):
             self.MatingOn = True
             self.BloodlustOn = False
 
-        # # HP 20-80%
-        if (self.hp > 0.2*self.maxHP and self.hp <= 0.8*self.maxHP):
-            if prob_hunt > 0.8:
+        # # HP middle zone; random chance
+        if (self.hp > bloodHP*self.maxHP and self.hp <= matingHP*self.maxHP):
+            if prob_hunt > 0.7:
                 self.BloodlustOn = True
                 self.MatingOn = False
-            if prob_mate > 0.8:
+            if prob_mate > 0.7:
                 self.BloodlustOn = False
                 self.MatingOn = True
-            if prob_movement > 0.6: # might require balancing
+            if prob_movement > 0.5: # might require balancing
                 self.BloodlustOn = False
                 self.MatingOn = False
 
-        # # HP < 20%; definitely wants to hunt
+        # definitely wants to hunt
         # self.BloodlustOn = True
-        if self.hp <= 0.2*self.maxHP:
+        if self.hp <= bloodHP*self.maxHP:
             self.BloodlustOn = True
             self.MatingOn = False
 
@@ -216,7 +223,6 @@ class Bacteria:
                 for bacteria in bacteria_list:
                     if bacteria != self and (bacteria.x, bacteria.y) == pos:
                         # first other bacteria in tendrils lines found
-
                         # excited case
                         if self.BloodlustOn or self.MatingOn:
                             # print(f"Bacteria {self.colour_name} is on the chase for bacteria {bacteria.colour_name}")
@@ -228,14 +234,16 @@ class Bacteria:
                             
                             # mating case
                             if self.MatingOn:
-                                if prob_mate > 0.5:
+                                if prob_mate > 0.1: # 90% chance will mate if both horny; actually chance of horny + meet when horny is alr q low so this doesnt matter much
                                     self.mate(bacteria_list)
-                            
+                        elif not self.BloodlustOn and not self.MatingOn and bacteria.BloodlustOn:
+                            # if not bloodlust or mating, will just avoid other bacteria thats hungry
+                            self.run(direction)
                             
         if self.BloodlustOn or self.MatingOn:
             self.frantic()
         # default state
-        if not self.BloodlustOn and not self.MatingOn and prob_movement > 0.4: # 40% chance to sit and chill if not excited
+        if not self.BloodlustOn and not self.MatingOn and prob_movement > 0.5: # 50% chance to sit and chill if not excited
             self.roam()
 
         # check for OBVIOUS collisions & prevent
@@ -302,6 +310,25 @@ class Bacteria:
         step = max(1, math.floor(self.legs/2))
         self.hp -= math.floor(self.legs/2)
         self.move(direction, step)
+    
+    # running logic against hungry bacteria
+    def run(self, direction):
+        # move 1 step in the opposite direction
+        opposite_directions = {
+            'top': 'down',
+            'top_right': 'down_left',
+            'right': 'left',
+            'down_right': 'top_left',
+            'down': 'top',
+            'down_left': 'top_right',
+            'left': 'right',
+            'top_left': 'down_right'
+        }
+        opposite_direction = opposite_directions.get(direction, 'top')
+        step = max(1, math.floor(self.legs/2))
+        # hp cost too
+        self.hp -= math.floor(self.legs/2)
+        self.move(opposite_direction, step)
                         
     def roam(self): # movement pattern ROAM
         # reduce hp as it roams - costs energy to move// remove later
@@ -341,32 +368,38 @@ class Bacteria:
         # check if any other bacteria is within the bite range
         for bacteria in bacteria_list:
             if bacteria != self and abs(self.x - bacteria.x) <= absorb_range and abs(self.y - bacteria.y) <= absorb_range: # only within range
-                # only higher absorption wins out;
-                if self.absorption > bacteria.absorption:
-                    # case 1: enable absoprtion if can penetrate armor
-                    if self.absorption > bacteria.membrane:
+
+                # case 1 - both BL: only higher absorption will absorb
+                if self.BloodlustOn and bacteria.BloodlustOn:
+                    # sub case: higher absoption will win out
+                    if self.absorption > bacteria.absorption:
                         absorb_damage = min(self.absorption - bacteria.membrane, bacteria.hp)  # set to depend on absorption value (20 is just example); also prevents absorption from regaining more than other bacterias hp
+                        if absorb_damage < 1: # if the other guy armor is cracked, deal only 1 dmg
+                            absorb_damage = 1
                         self.hp += round(absorb_damage,2)
                         bacteria.hp -= absorb_damage
-                    # if the other guy defense is too high, deal only 1 damage. cannot absorb more than remaining bacteria hp (if remaining bacteria hp is 1)
-                    else:
-                        absorb_damage = min(1, bacteria.hp) 
-                        self.hp += round(absorb_damage,2)
-                        bacteria.hp -= absorb_damage
+                # case 2 - self is BL, other is not
+                    # lower absorption still allowed
+                elif self.BloodlustOn and not bacteria.BloodlustOn:
+                    absorb_damage = min(self.absorption - bacteria.membrane, bacteria.hp)
+                    if absorb_damage < 1: # if the other guy armor is cracked, deal only 1 dmg
+                            absorb_damage = 1
+                    self.hp += round(absorb_damage,2)
+                    bacteria.hp -= absorb_damage
 
                     print(f"Bacteria {self.colour_name} bit Bacteria {bacteria.colour_name} at position {bacteria.x},{bacteria.y}.")
                     print(f"After absorbing: {self.colour_name} HP: {self.hp}, {bacteria.colour_name} HP: {bacteria.hp}")
 
-                    # check if the other bacteria's HP is zero after absorption
-                    if bacteria.hp <= 0:
-                        print(f"Bacteria {bacteria.colour_name} has been fully eaten by Bacteria {self.colour_name}!")
-                    return
+            # check if the other bacteria's HP is zero after absorption
+            if bacteria.hp <= 0:
+                print(f"Bacteria {bacteria.colour_name} has been fully eaten by Bacteria {self.colour_name}!")
+            return
     
     # mating logic using DNA
     def mate(self, bacteria_list):
-        # set the range
-        pheromone_range = 3
         for bacteria in bacteria_list:
+            # set the range
+            pheromone_range = math.floor(self.tendrils//3) + math.floor(bacteria.tendrils//3) # range chosen cos dw too close then can mate
             # check if any other bacteria is within mating range
             if bacteria != self and abs(self.x - bacteria.x) <= pheromone_range and abs(self.y - bacteria.y) <= pheromone_range: # only within range
                 # both must be in mating mood
@@ -389,7 +422,7 @@ class Bacteria:
                             # append child to bacteria list
                             bacteria_list.append(child)
 
-                            # parents sacrifice 10% hp to create child
+                            # parents sacrifice 10% of current hp to create child
                             self.hp = 0.9*self.hp
                             bacteria.hp = 0.9*bacteria.hp
 
@@ -499,10 +532,6 @@ class Bacteria:
             return  # "Child is too powerful"
 
         return child_dna
-    
-    # running logic against hungry bacteria
-    def run(self, bacteria_list):
-        pass
 
     # sunlight zone behaviour
     def photosynthesise(self, zone_value):
@@ -529,9 +558,12 @@ class Bacteria:
         text_id = font.render(f"ID: {self.id}", True, WHITE)
         text_hp = font.render(f"HP: {self.hp}", True, WHITE)
         text_dna = font.render(f"DNA: {self.dna}", True, WHITE)
-        screen.blit(text_id, (self.x * TILE_SIZE, self.y * TILE_SIZE - TILE_SIZE))
+        is_child = "Child" if self.isChild else "Not Child"
+        text_child = font.render(f"{is_child}", True, WHITE)
+        # screen.blit(text_id, (self.x * TILE_SIZE, self.y * TILE_SIZE - TILE_SIZE))
         screen.blit(text_hp, (self.x * TILE_SIZE, self.y * TILE_SIZE + TILE_SIZE))
-        screen.blit(text_dna, (self.x * TILE_SIZE, self.y * TILE_SIZE + 2*TILE_SIZE))
+        # screen.blit(text_dna, (self.x * TILE_SIZE, self.y * TILE_SIZE + 2*TILE_SIZE))
+        screen.blit(text_child,(self.x * TILE_SIZE, self.y * TILE_SIZE + 2*TILE_SIZE) )
 
         # bloodlust and mating flags
         font2 = pygame.font.SysFont(None, 18)
@@ -541,6 +573,9 @@ class Bacteria:
         elif self.MatingOn:
             text_mating = font2.render("Mating", True, BLUE)
             screen.blit(text_mating, (self.x * TILE_SIZE, self.y * TILE_SIZE + 3*TILE_SIZE))
+        
+        # Draw the HP bar over the bacteria object
+        self.draw_hp_bar(screen)
 
     # function to make sure tendrils show each time step
     def update_tendrils_lines(self):
@@ -554,6 +589,34 @@ class Bacteria:
             'left': [(self.x - i, self.y) for i in range(1, int(self.tendrils) + 1)],
             'top_left': [(self.x - i, self.y - i) for i in range(1, int(self.tendrils) + 1)]
         }
+    
+    def draw_hp_bar(self, screen):
+        # width of the HP bar (pixels)
+        bar_width = 50
+        hp_bar_width = int((self.hp / self.maxHP) * bar_width)
+
+        # color of the HP bar based on the HP level; follow thresholds
+        if self.hp > self.maxHP*matingHP:
+            hp_color = GREEN
+        elif self.hp > self.maxHP*bloodHP:
+            hp_color = YELLOW
+        else:
+            hp_color = RED
+
+        # position of the HP bar within the grid cell
+        grid_cell_x = self.x * TILE_SIZE  # convert grid cell coordinate to pixel coordinate
+        grid_cell_y = self.y * TILE_SIZE
+
+        # relative to the grid cell
+        hp_bar_x = grid_cell_x + (TILE_SIZE - bar_width) // 2
+        hp_bar_y = grid_cell_y - 10  # Adjusted position above the grid cell
+
+        # draw the HP bar
+        pygame.draw.rect(screen, BLACK, [hp_bar_x, hp_bar_y, bar_width, 5])
+        pygame.draw.rect(screen, hp_color, [hp_bar_x, hp_bar_y, hp_bar_width, 5])
+
+
+    
     # ---- END OF PYGAME SCREEN FUNCTIONS ----
             
 
@@ -715,20 +778,20 @@ def main():
             champion_id, champion_details = sorted_bacteria[0]
             text_dna = font3.render(f"DNA of the champion bacteria: {champion_details['dna']}", True, WHITE)
             screen.blit(text_dna, (10, y_offset))
-            print(f"Longest living Bacteria has DNA {champion_details['dna']}")
+            # print(f"Longest living Bacteria has DNA {champion_details['dna']}")
 
             traits_text = font3.render("Trait values:", True, WHITE)
             screen.blit(traits_text, (10, y_offset + gap))
             for i, (trait, value) in enumerate(champion_details['traits'].items()):
                 text_trait = font3.render(f"{trait}: {value}", True, WHITE)
                 screen.blit(text_trait, (10, y_offset + (i+2)*gap))
-                print(f"Champion bacteria traits: {trait}: {value}")
+                # print(f"Champion bacteria traits: {trait}: {value}")
             
             # print if the champion bacteria is a child or not
             child_text = "Child" if champion_details['isChild']==True else "not a child"
             text_child = font3.render(f"Champion is a {child_text}", True, WHITE)
             screen.blit(text_child, (10, y_offset + (i + 3) * gap))
-            print(f"Champion is {child_text}")
+            # print(f"Champion is {child_text}")
 
             # display top 10 bacteria with longest lifespans
             ranking_text = font3.render("Top 10 Ranking of Bacteria according to Lifespan:", True, WHITE)
@@ -743,16 +806,12 @@ def main():
                 text_rank_rendered = font3.render(text_rank, True, WHITE)
                 screen.blit(text_rank_rendered, (20, y_offset + (j+9) * gap))
             
-            print(f"Top 10 rankings:")
-            for j, (bacteria_id, details) in enumerate(sorted_bacteria[:10], start=1):
-                print(f"{j}. Lifespan: {details['lifespan']}, {'Child' if details['isChild'] else 'NotChild'}, DNA: {details['dna']}")
-                for trait, value in details['traits'].items():
-                    print(f"   {trait}: {value}")
-            
-            break
+            # print(f"Top 10 rankings:")
+            # for j, (bacteria_id, details) in enumerate(sorted_bacteria[:10], start=1):
+            #     print(f"{j}. Lifespan: {details['lifespan']}, {'Child' if details['isChild'] else 'NotChild'}, DNA: {details['dna']}")
+            #     for trait, value in details['traits'].items():
+            #         print(f"   {trait}: {value}")
 
-                        
-            
         # updates time step
         pygame.display.update()
 
