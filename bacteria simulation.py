@@ -2,10 +2,8 @@
 '''
 Priorities: (1), (2), (3)
 Main Logic:
-
-2. photosynthesis - sunlight zones (1)
 3. play with parameters (ranges, values based on traits) (3)
-
+1. need to allow all bacteria to photosynthesise - not a movement pattern 
 
 Analysis:
 1. add init number as line on graph (1)
@@ -26,6 +24,7 @@ Completed:
 3. run behaviour (1) - 20-80% hp will run if detect BL if self is not BL
 4. added hp bars
 5. absorb function fix -> enable any bacteria to eat each other; only if BL then rules change
+6. photosynthesis - sunlight zones (1)
 '''
 
 # install these libraries
@@ -50,7 +49,7 @@ bloodHP = 0.3
 
 # pygame screen elements
 WIDTH, HEIGHT = 800,800 # default 800,800
-TILE_SIZE = 10
+TILE_SIZE = 5
 
 # # if need to bound the simulation area use this
 # LEFT_SIM_BOUND_WIDTH = WIDTH // 4  # width of the left SIM_BOUND (in pixels)
@@ -269,9 +268,10 @@ class Bacteria:
                             
         if self.BloodlustOn or self.MatingOn:
             self.frantic()
+        
         # default state
         if not self.BloodlustOn and not self.MatingOn:
-            if self.photosynthesis/15 > 0.5:
+            if prob_movement < self.photosynthesis/15: # higher photosynthesis value = likelier to photosynthesise
                 self.photosynthesise(sunlight_values)
             else:
                 self.roam()
@@ -439,7 +439,7 @@ class Bacteria:
                     if current_time - self.last_mate_time >= Bacteria.MATING_COOLDOWN:
                         child_dna = self.inherit(self.dna, bacteria.dna)
                         if child_dna == "":
-                            return
+                            print("mating failed")
                         else:
                             # create child with inherited traits and DNA
                             child = Bacteria(self.x, self.y, isChild=True, dna = child_dna)
@@ -475,7 +475,7 @@ class Bacteria:
         ones_difference = abs(num_ones1 - num_ones2)
         if ones_difference > 1:
             print("parents cannot mate")
-            return # "Parents cannot mate."
+            return "" # "Parents cannot mate."
         
         # step 1:
         # turn both DNA strings into lists of how many traits there are with each entry being a value
@@ -559,11 +559,13 @@ class Bacteria:
         # ensure that the number of 1s in the child does not exceed MAX_POWER
         if child_ones > Bacteria.MAX_POWER:
             print("child is too powerful")
-            return  # "Child is too powerful"
+            return "" # "Child is too powerful"
 
         return child_dna
 
     def photosynthesise(self, sunlight_values):
+        # sit still
+
         # bacteria is within the grid boundaries
         if 0 <= self.x < GRID_WIDTH and 0 <= self.y < GRID_HEIGHT:
             # check if there is sunlight in the current cell
@@ -821,7 +823,7 @@ def main():
         
         # print last alive
         if len(bacteria_list) == 1:
-            print(bacteria_list[0])
+            print(bacteria_list[0].dna, bacteria_list[0].traits)
 
         # # end of sim status
         if len(bacteria_list) == 0:
