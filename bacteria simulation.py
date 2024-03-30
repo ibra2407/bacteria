@@ -405,68 +405,98 @@ class Bacteria:
     # use factory method
     @staticmethod
     def inherit(dna1, dna2):
+        # step 0:
+        # check both parents dna 1s differ by at most 1
+        num_ones1 = dna1.count('1')
+        num_ones2 = dna2.count('1')
+        ones_difference = abs(num_ones1 - num_ones2)
+        if ones_difference > 1:
+            print("parents cannot mate")
+            return # "Parents cannot mate."
+        
         # Step 1:
         # Turn both DNA strings into lists of how many traits there are with each entry being a value
         dna_trait1 = [int(dna1[i:i+4], 2) for i in range(0, len(dna1), 4)]
         dna_trait2 = [int(dna2[i:i+4], 2) for i in range(0, len(dna2), 4)]
 
         # Step 2:
-        # Get the max value
-        max_value1 = max(dna_trait1)
-        max_value2 = max(dna_trait2)
+        # Find the highest value and its index in each DNA string
+        max_values_indices1 = [(val, idx) for idx, val in enumerate(dna_trait1)]
+        max_values_indices2 = [(val, idx) for idx, val in enumerate(dna_trait2)]
 
-        # Check if the difference in the number of ones between parents is 0 or 1
-        num_ones1 = dna1.count('1')
-        num_ones2 = dna2.count('1')
-        ones_difference = abs(num_ones1 - num_ones2)
-        if ones_difference > 1:
-            return "" # "Parents cannot mate."
+        max_value1, max_index1 = max(max_values_indices1)
+        max_value2, max_index2 = max(max_values_indices2)
+
+        # If there's a tie in max values, randomly choose one and assign its index
+        max_values1 = [val for val, _ in max_values_indices1 if val == max_value1]
+        max_values2 = [val for val, _ in max_values_indices2 if val == max_value2]
+
+        if len(max_values1) > 1:
+            max_index1 = random.choice([idx for _, idx in max_values_indices1 if _ == max_value1])
+
+        if len(max_values2) > 1:
+            max_index2 = random.choice([idx for _, idx in max_values_indices2 if _ == max_value2])
+
+        # Handle case where max index of both parents is the same
+        if max_index1 == max_index2:
+            # Find out which one has the higher value
+            if max_value1 >= max_value2:
+                # Keep max dna 1
+                max_value2 = max((val for idx, val in enumerate(dna_trait2) if idx != max_index1))
+                max_index2 = dna_trait2.index(max_value2)
+
+            else:
+                max_value1 = max((val for idx, val in enumerate(dna_trait1) if idx != max_index2))
+                max_index1 = dna_trait1.index(max_value1)
+
+        print("dna1:",max_value1,max_index1+1, "dna2:", max_value2,max_index2+1)
 
         # Step 3:
         # Directly copy the DNA strings corresponding to the traits of both parents to the child DNA
         child_dna = ''
         inherited_indices = set()  # Store indices of inherited trait segments
+
+        # Prioritize traits based on strength, ensuring no tie-breakers
         for i in range(len(dna_trait1)):
-            if dna_trait1[i] == max_value1:
-                child_dna += dna1[i*4:i*4+4]
-                inherited_indices.add(i)
-            elif dna_trait2[i] == max_value2:
+            if i == max_index2 and (i != max_index1 or max_value2 > max_value1):
                 child_dna += dna2[i*4:i*4+4]
+                inherited_indices.add(i)
+            elif i == max_index1 and (i != max_index2 or max_value1 > max_value2):
+                child_dna += dna1[i*4:i*4+4]
                 inherited_indices.add(i)
             else:
                 child_dna += '0000'  # placeholder for non-max traits
 
         # Step 4:
         # Ensure the number of 1s is at least the max of the parents' number of 1s
-        max_ones = max(num_ones1, num_ones2)
+        max_ones = max(dna1.count('1'), dna2.count('1'))
 
-        # If child has fewer ones than max of parents, add extra ones
+        # Replace remaining 0s randomly until achieving desired number of 1s
         child_ones = child_dna.count('1')
-        remaining_ones = max_ones - child_ones
-        
-        # Iterate through the non-inherited portions to add ones
-        for i in range(len(dna_trait1)):
-            if i not in inherited_indices:
-                # If the remaining ones are already added, break the loop
-                if remaining_ones == 0:
-                    break
-                # Add one to the non-inherited portion
-                child_dna = child_dna[:i*4] + '1' + child_dna[i*4+1:]
+        while child_ones < max_ones:
+            zero_positions = [pos for pos, char in enumerate(child_dna) if char == '0']
+            if zero_positions:
+                random_zero_position = random.choice(zero_positions)
+                child_dna = child_dna[:random_zero_position] + '1' + child_dna[random_zero_position+1:]
                 child_ones += 1
-                remaining_ones -= 1
+            else:
+                break
 
         # Step 5:
-        # With 50% chance, add an extra 1
-        if random.random() < 0.5:
-            index = random.randint(0, len(child_dna) - 1)
-            if index // 4 not in inherited_indices:  # Check if the index is not in an inherited trait segment
-                child_dna = child_dna[:index] + '1' + child_dna[index+1:]
+        # With 10% chance, add an extra 1
+        if random.random() < 0.1:
+            print("lucky")
+            zero_positions = [pos for pos, char in enumerate(child_dna) if char == '0']
+            if zero_positions:
+                random_zero_position = random.choice(zero_positions)
+                child_dna = child_dna[:random_zero_position] + '1' + child_dna[random_zero_position+1:]
                 child_ones += 1
 
         # Step 6:
         # Ensure that the number of 1s in the child does not exceed MAX_POWER
         if child_ones > Bacteria.MAX_POWER:
-            return "" # "Child is too powerful"
+            print("child is too powerful")
+            return  # "Child is too powerful"
 
         return child_dna
     
