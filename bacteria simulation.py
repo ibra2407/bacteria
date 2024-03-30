@@ -3,7 +3,9 @@
 Priorities: (1), (2), (3)
 Main Logic:
 3. play with parameters (ranges, values based on traits) (3)
-1. need to allow all bacteria to photosynthesise - not a movement pattern 
+1. need to allow all bacteria to photosynthesise - not a movement pattern; separate gain of hp from light-seeking
+** currently "blooms" still happen - rapid breeding. we want a more controlled, chill simulation
+** also quite hard to actually keep track of who is doing what
 
 Analysis:
 1. add init number as line on graph (1)
@@ -41,15 +43,18 @@ from tkinter import scrolledtext
 pygame.init()
 
 # global variable to set number of bact in simulation
-sim_num_bact = 10
+sim_num_bact = 20
 # set mating hp threshold
 matingHP = 0.7
 # set bloodlust hp
 bloodHP = 0.3
+# multipliers for trait impacts
+M_absorption = 4
+M_membrane = 1
 
 # pygame screen elements
 WIDTH, HEIGHT = 800,800 # default 800,800
-TILE_SIZE = 5
+TILE_SIZE = 10
 
 # # if need to bound the simulation area use this
 # LEFT_SIM_BOUND_WIDTH = WIDTH // 4  # width of the left SIM_BOUND (in pixels)
@@ -78,7 +83,7 @@ PURPLE = (255, 0, 255)
 
 # sunlight definitions
 # define sunlight parameters
-SUN_RADIUS = WIDTH // 3
+SUN_RADIUS = WIDTH // 2
 SUN_CENTER = (WIDTH // 2, HEIGHT // 2)
 
 # define sunlight values for each cell in the grid based on distance from the center
@@ -111,7 +116,7 @@ class Bacteria:
     START_POWER = 8 # number of 1s allowed in dna string at the start; "power" of each cell at the start shd be low and get higher as generations go
     # can start with half of 24 (total)
     MAX_POWER = 18 # can only choose to max out 4 out of 6 traits; 10% chance of a child to increase its power
-    MATING_COOLDOWN = 3000
+    MATING_COOLDOWN = 5000
     # insert others to change "global" params for all bacteria
 
     def __init__(self, x, y, isChild = False, dna = None):
@@ -211,6 +216,7 @@ class Bacteria:
         prob_movement = random.uniform(0,1)
         prob_mate = random.uniform(0,1)
         prob_hunt = random.uniform(0,1)
+        prob_photosynthesis = random.uniform(0,1)
         # print(prob_movement, prob_hunt, prob_mate) # prints probabilities at each time step
 
         self.hp -= 1 # on top of movement hp deduction
@@ -226,13 +232,13 @@ class Bacteria:
 
         # # HP middle zone; random chance
         if (self.hp > bloodHP*self.maxHP and self.hp <= matingHP*self.maxHP):
-            if prob_hunt > 0.7:
+            if prob_hunt > 0.8:
                 self.BloodlustOn = True
                 self.MatingOn = False
-            if prob_mate > 0.7:
+            if prob_mate > 0.8:
                 self.BloodlustOn = False
                 self.MatingOn = True
-            if prob_movement > 0.5: # might require balancing
+            if prob_movement > 0.2: # might require balancing
                 self.BloodlustOn = False
                 self.MatingOn = False
 
@@ -260,21 +266,25 @@ class Bacteria:
                             
                             # mating case
                             if self.MatingOn:
-                                if prob_mate > 0.1: # 90% chance will mate if both horny; actually chance of horny + meet when horny is alr q low so this doesnt matter much
+                                if prob_mate > 0.8: # 90% chance will mate if both horny; actually chance of horny + meet when horny is alr q low so this doesnt matter much
                                     self.mate(bacteria_list)
-                        elif not self.BloodlustOn and not self.MatingOn and bacteria.BloodlustOn:
+
+                        else:
                             # if not bloodlust or mating, will just avoid other bacteria thats hungry
                             self.run(direction)
                             
         if self.BloodlustOn or self.MatingOn:
             self.frantic()
+            if sunlight_values[self.y][self.x] > 0 and prob_photosynthesis < self.photosynthesis/15:
+                self.BloodlustOn = False
+                self.MatingOn = False
         
         # default state
         if not self.BloodlustOn and not self.MatingOn:
-            if prob_movement < self.photosynthesis/15: # higher photosynthesis value = likelier to photosynthesise
-                self.photosynthesise(sunlight_values)
-            else:
+            if prob_movement > 0.5:
                 self.roam()
+        # all are able to photosynthesise
+        self.photosynthesise(sunlight_values)
 
         # check for OBVIOUS collisions & prevent
         next_positions = [(bacteria.x, bacteria.y) for bacteria in bacteria_list]
@@ -373,7 +383,7 @@ class Bacteria:
         self.hp -= 1
         # generate random direction and move
         direction = random.choice(['top', 'top_right', 'right', 'down_right', 'down', 'down_left', 'left', 'top_left'])
-        step = 3
+        step = 4
         self.move(direction, step)
     
     # death - all can die
@@ -403,7 +413,7 @@ class Bacteria:
                 if self.BloodlustOn and bacteria.BloodlustOn:
                     # sub case: higher absoption will win out
                     if self.absorption > bacteria.absorption:
-                        absorb_damage = min(self.absorption - bacteria.membrane, bacteria.hp)  # set to depend on absorption value (20 is just example); also prevents absorption from regaining more than other bacterias hp
+                        absorb_damage = min(self.absorption*M_absorption - bacteria.membrane*M_membrane, bacteria.hp)  # set to depend on absorption value (20 is just example); also prevents absorption from regaining more than other bacterias hp
                         if absorb_damage < 1: # if the other guy armor is cracked, deal only 1 dmg
                             absorb_damage = 1
                         self.hp += round(absorb_damage,2)
@@ -411,25 +421,55 @@ class Bacteria:
                 # case 2 - self is BL, other is not
                     # lower absorption still allowed
                 elif self.BloodlustOn and not bacteria.BloodlustOn:
-                    absorb_damage = min(self.absorption - bacteria.membrane, bacteria.hp)
+                    absorb_damage = min(self.absorption*M_absorption - bacteria.membrane*M_membrane, bacteria.hp)
                     if absorb_damage < 1: # if the other guy armor is cracked, deal only 1 dmg
                             absorb_damage = 1
                     self.hp += round(absorb_damage,2)
                     bacteria.hp -= absorb_damage
 
-                    print(f"Bacteria {self.colour_name} bit Bacteria {bacteria.colour_name} at position {bacteria.x},{bacteria.y}.")
-                    print(f"After absorbing: {self.colour_name} HP: {self.hp}, {bacteria.colour_name} HP: {bacteria.hp}")
+                    # print(f"Bacteria {self.colour_name} bit Bacteria {bacteria.colour_name} at position {bacteria.x},{bacteria.y}.")
+                    # print(f"After absorbing: {self.colour_name} HP: {self.hp}, {bacteria.colour_name} HP: {bacteria.hp}")
 
             # check if the other bacteria's HP is zero after absorption
-            if bacteria.hp <= 0:
-                print(f"Bacteria {bacteria.colour_name} has been fully eaten by Bacteria {self.colour_name}!")
-            return
+            # if bacteria.hp <= 0:
+                # print(f"Bacteria {bacteria.colour_name} has been fully eaten by Bacteria {self.colour_name}!")
+        
+    def photosynthesise(self, sunlight_values):
+        # bacteria is within the grid boundaries
+        if 0 <= self.x < GRID_WIDTH and 0 <= self.y < GRID_HEIGHT:
+            # check if there is sunlight in the current cell
+            if sunlight_values[self.y][self.x] > 0:
+                # check if the bacteria's HP is below its matingHP threshold
+                if self.hp < matingHP * self.maxHP:
+                    # recover HP based on sunlight value and photosynthesis trait
+                    hp_gain = sunlight_values[self.y][self.x] * self.photosynthesis
+                    self.hp += hp_gain
+                    # ensure HP doesn't exceed maxHP
+                    self.hp = min(self.hp, self.maxHP)
+                    # print(f"Bacteria {self.colour_name} at ({self.x}, {self.y}) photosynthesized and gained {hp_gain} HP.")
+
+                # check for higher sunlight value within tendrils
+                max_sunlight = 0
+                direction_to_move = None
+                for direction, positions in self.tendrils_lines.items():
+                    for pos in positions:
+                        if 0 <= pos[0] < GRID_WIDTH and 0 <= pos[1] < GRID_HEIGHT:
+                            if sunlight_values[pos[1]][pos[0]] > max_sunlight:
+                                max_sunlight = sunlight_values[pos[1]][pos[0]]
+                                direction_to_move = direction
+                
+                # move towards the cell with higher sunlight value
+                if direction_to_move and random.random() < self.photosynthesis / 15:
+                    step = max(1, math.floor(self.legs / 2))
+                    self.hp -= math.floor(self.legs / 2)
+                    self.move(direction_to_move, step)
+                    # print(f"Bacteria {self.colour_name} moved towards higher sunlight in direction {direction_to_move} and consumed {step} HP.")
     
     # mating logic using DNA
     def mate(self, bacteria_list):
         for bacteria in bacteria_list:
             # set the range
-            pheromone_range = math.floor(self.tendrils//3) + math.floor(bacteria.tendrils//3) # range chosen cos dw too close then can mate
+            pheromone_range = 3
             # check if any other bacteria is within mating range
             if bacteria != self and abs(self.x - bacteria.x) <= pheromone_range and abs(self.y - bacteria.y) <= pheromone_range: # only within range
                 # both must be in mating mood
@@ -453,8 +493,8 @@ class Bacteria:
                             bacteria_list.append(child)
 
                             # parents sacrifice 10% of current hp to create child
-                            self.hp = 0.9*self.hp
-                            bacteria.hp = 0.9*bacteria.hp
+                            self.hp -= 50
+                            bacteria.hp -= 50
 
                             self.last_mate_time = current_time
 
@@ -562,40 +602,6 @@ class Bacteria:
             return "" # "Child is too powerful"
 
         return child_dna
-
-    def photosynthesise(self, sunlight_values):
-        # sit still
-
-        # bacteria is within the grid boundaries
-        if 0 <= self.x < GRID_WIDTH and 0 <= self.y < GRID_HEIGHT:
-            # check if there is sunlight in the current cell
-            if sunlight_values[self.y][self.x] > 0:
-                # check if the bacteria's HP is below its matingHP threshold
-                if self.hp < matingHP * self.maxHP:
-                    # recover HP based on sunlight value and photosynthesis trait
-                    hp_gain = sunlight_values[self.y][self.x] * self.photosynthesis
-                    self.hp += hp_gain
-                    # ensure HP doesn't exceed maxHP
-                    self.hp = min(self.hp, self.maxHP)
-                    print(f"Bacteria {self.colour_name} at ({self.x}, {self.y}) photosynthesized and gained {hp_gain} HP.")
-
-                # check for higher sunlight value within tendrils
-                max_sunlight = 0
-                direction_to_move = None
-                for direction, positions in self.tendrils_lines.items():
-                    for pos in positions:
-                        if 0 <= pos[0] < GRID_WIDTH and 0 <= pos[1] < GRID_HEIGHT:
-                            if sunlight_values[pos[1]][pos[0]] > max_sunlight:
-                                max_sunlight = sunlight_values[pos[1]][pos[0]]
-                                direction_to_move = direction
-                
-                # move towards the cell with higher sunlight value
-                if direction_to_move and random.random() < self.photosynthesis / 15:
-                    step = max(1, math.floor(self.legs / 2))
-                    self.hp -= math.floor(self.legs / 2)
-                    self.move(direction_to_move, step)
-                    print(f"Bacteria {self.colour_name} moved towards higher sunlight in direction {direction_to_move} and consumed {step} HP.")
-
 
     # ---- FOR PYGAME SCREEN ----
 
