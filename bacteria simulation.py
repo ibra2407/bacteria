@@ -77,6 +77,33 @@ BLUE = (0, 0, 255)
 CYAN = (0, 255, 255)
 PURPLE = (255, 0, 255)
 
+# sunlight definitions
+# define sunlight parameters
+SUN_RADIUS = WIDTH // 3
+SUN_CENTER = (WIDTH // 2, HEIGHT // 2)
+
+# define sunlight values for each cell in the grid based on distance from the center
+sunlight_values = [[0] * GRID_WIDTH for _ in range(GRID_HEIGHT)]
+
+for y in range(GRID_HEIGHT):
+    for x in range(GRID_WIDTH):
+        distance = math.sqrt((x * TILE_SIZE - SUN_CENTER[0]) ** 2 + (y * TILE_SIZE - SUN_CENTER[1]) ** 2)
+        if distance <= SUN_RADIUS:
+            sunlight_values[y][x] = 1 - (distance / SUN_RADIUS)
+        else:
+            sunlight_values[y][x] = 0
+
+# print(sunlight_values)
+
+def draw_sun():
+    for y in range(GRID_HEIGHT):
+        for x in range(GRID_WIDTH):
+            sunlight = sunlight_values[y][x]
+            color = (int(255 * sunlight), int(255 * sunlight), 0)  # pale yellow color based on sunlight value
+            rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+            pygame.draw.rect(screen, color, rect)
+
+
 # ---- ---- ---- ---- bacteria class ---- ---- ---- ----
 class Bacteria:
 
@@ -243,8 +270,11 @@ class Bacteria:
         if self.BloodlustOn or self.MatingOn:
             self.frantic()
         # default state
-        if not self.BloodlustOn and not self.MatingOn and prob_movement > 0.5: # 50% chance to sit and chill if not excited
-            self.roam()
+        if not self.BloodlustOn and not self.MatingOn:
+            if self.photosynthesis/15 > 0.5:
+                self.photosynthesise(sunlight_values)
+            else:
+                self.roam()
 
         # check for OBVIOUS collisions & prevent
         next_positions = [(bacteria.x, bacteria.y) for bacteria in bacteria_list]
@@ -438,7 +468,7 @@ class Bacteria:
     # use factory method
     @staticmethod
     def inherit(dna1, dna2):
-        # step 0:
+        # step 0: (selection)
         # check both parents dna 1s differ by at most 1
         num_ones1 = dna1.count('1')
         num_ones2 = dna2.count('1')
@@ -447,20 +477,20 @@ class Bacteria:
             print("parents cannot mate")
             return # "Parents cannot mate."
         
-        # Step 1:
-        # Turn both DNA strings into lists of how many traits there are with each entry being a value
+        # step 1:
+        # turn both DNA strings into lists of how many traits there are with each entry being a value
         dna_trait1 = [int(dna1[i:i+4], 2) for i in range(0, len(dna1), 4)]
         dna_trait2 = [int(dna2[i:i+4], 2) for i in range(0, len(dna2), 4)]
 
-        # Step 2:
-        # Find the highest value and its index in each DNA string
+        # step 2: (crossover)
+        # find the highest value and its index in each DNA string
         max_values_indices1 = [(val, idx) for idx, val in enumerate(dna_trait1)]
         max_values_indices2 = [(val, idx) for idx, val in enumerate(dna_trait2)]
 
         max_value1, max_index1 = max(max_values_indices1)
         max_value2, max_index2 = max(max_values_indices2)
 
-        # If there's a tie in max values, randomly choose one and assign its index
+        # ff there's a tie in max values, randomly choose one and assign its index
         max_values1 = [val for val, _ in max_values_indices1 if val == max_value1]
         max_values2 = [val for val, _ in max_values_indices2 if val == max_value2]
 
@@ -470,11 +500,11 @@ class Bacteria:
         if len(max_values2) > 1:
             max_index2 = random.choice([idx for _, idx in max_values_indices2 if _ == max_value2])
 
-        # Handle case where max index of both parents is the same
+        # handle case where max index of both parents is the same
         if max_index1 == max_index2:
-            # Find out which one has the higher value
+            # find out which one has the higher value
             if max_value1 >= max_value2:
-                # Keep max dna 1
+                # keep max dna 1, find next highest for 2nd parents
                 max_value2 = max((val for idx, val in enumerate(dna_trait2) if idx != max_index1))
                 max_index2 = dna_trait2.index(max_value2)
 
@@ -484,12 +514,12 @@ class Bacteria:
 
         print("dna1:",max_value1,max_index1+1, "dna2:", max_value2,max_index2+1)
 
-        # Step 3:
-        # Directly copy the DNA strings corresponding to the traits of both parents to the child DNA
+        # step 3:
+        # directly copy the DNA strings corresponding to the traits of both parents to the child DNA
         child_dna = ''
-        inherited_indices = set()  # Store indices of inherited trait segments
+        inherited_indices = set()  # store indices of inherited trait segments
 
-        # Prioritize traits based on strength, ensuring no tie-breakers
+        # prioritize traits based on strength, ensuring no tie-breakers
         for i in range(len(dna_trait1)):
             if i == max_index2 and (i != max_index1 or max_value2 > max_value1):
                 child_dna += dna2[i*4:i*4+4]
@@ -500,11 +530,11 @@ class Bacteria:
             else:
                 child_dna += '0000'  # placeholder for non-max traits
 
-        # Step 4:
-        # Ensure the number of 1s is at least the max of the parents' number of 1s
+        # step 4:
+        # ensure the number of 1s is at least the max of the parents' number of 1s
         max_ones = max(dna1.count('1'), dna2.count('1'))
 
-        # Replace remaining 0s randomly until achieving desired number of 1s
+        # replace remaining 0s randomly until achieving desired number of 1s
         child_ones = child_dna.count('1')
         while child_ones < max_ones:
             zero_positions = [pos for pos, char in enumerate(child_dna) if char == '0']
@@ -515,8 +545,8 @@ class Bacteria:
             else:
                 break
 
-        # Step 5:
-        # With 10% chance, add an extra 1
+        # step 5:
+        # 10% chance, add an extra 1 (mutation)
         if random.random() < 0.1:
             print("lucky")
             zero_positions = [pos for pos, char in enumerate(child_dna) if char == '0']
@@ -525,17 +555,45 @@ class Bacteria:
                 child_dna = child_dna[:random_zero_position] + '1' + child_dna[random_zero_position+1:]
                 child_ones += 1
 
-        # Step 6:
-        # Ensure that the number of 1s in the child does not exceed MAX_POWER
+        # step 6:
+        # ensure that the number of 1s in the child does not exceed MAX_POWER
         if child_ones > Bacteria.MAX_POWER:
             print("child is too powerful")
             return  # "Child is too powerful"
 
         return child_dna
 
-    # sunlight zone behaviour
-    def photosynthesise(self, zone_value):
-        pass
+    def photosynthesise(self, sunlight_values):
+        # bacteria is within the grid boundaries
+        if 0 <= self.x < GRID_WIDTH and 0 <= self.y < GRID_HEIGHT:
+            # check if there is sunlight in the current cell
+            if sunlight_values[self.y][self.x] > 0:
+                # check if the bacteria's HP is below its matingHP threshold
+                if self.hp < matingHP * self.maxHP:
+                    # recover HP based on sunlight value and photosynthesis trait
+                    hp_gain = sunlight_values[self.y][self.x] * self.photosynthesis
+                    self.hp += hp_gain
+                    # ensure HP doesn't exceed maxHP
+                    self.hp = min(self.hp, self.maxHP)
+                    print(f"Bacteria {self.colour_name} at ({self.x}, {self.y}) photosynthesized and gained {hp_gain} HP.")
+
+                # check for higher sunlight value within tendrils
+                max_sunlight = 0
+                direction_to_move = None
+                for direction, positions in self.tendrils_lines.items():
+                    for pos in positions:
+                        if 0 <= pos[0] < GRID_WIDTH and 0 <= pos[1] < GRID_HEIGHT:
+                            if sunlight_values[pos[1]][pos[0]] > max_sunlight:
+                                max_sunlight = sunlight_values[pos[1]][pos[0]]
+                                direction_to_move = direction
+                
+                # move towards the cell with higher sunlight value
+                if direction_to_move and random.random() < self.photosynthesis / 15:
+                    step = max(1, math.floor(self.legs / 2))
+                    self.hp -= math.floor(self.legs / 2)
+                    self.move(direction_to_move, step)
+                    print(f"Bacteria {self.colour_name} moved towards higher sunlight in direction {direction_to_move} and consumed {step} HP.")
+
 
     # ---- FOR PYGAME SCREEN ----
 
@@ -715,7 +773,8 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
                 
-        screen.fill(GREY)
+        screen.fill(BLACK)
+        draw_sun()
         # highlight_rect = pygame.Rect(3*TILE_SIZE, 3*TILE_SIZE, TILE_SIZE, TILE_SIZE)
         # pygame.draw.rect(screen, (255, 0, 0), highlight_rect, 0)
         # here we use draw_grid to draw the positions on top of the grid
@@ -759,6 +818,10 @@ def main():
         # stop updating graph if bacteria list is empty
         if len(bacteria_list) == 0:
             update_graph_flag = False
+        
+        # print last alive
+        if len(bacteria_list) == 1:
+            print(bacteria_list[0])
 
         # # end of sim status
         if len(bacteria_list) == 0:
@@ -814,6 +877,7 @@ def main():
 
         # updates time step
         pygame.display.update()
+        pygame.display.flip()
 
     pygame.quit()
 
