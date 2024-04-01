@@ -33,16 +33,35 @@ Completed:
 
 # install these libraries
 import pygame
+import os
 import random
 import math
 import matplotlib.pyplot as plt
-from matplotlib.widgets import TextBox
 import numpy as np
-import tkinter as tk
-from tkinter import scrolledtext
+from matplotlib.backends.backend_agg import FigureCanvasAgg
 
 # initialise a pygame instance
 pygame.init()
+
+# Determine screen resolution
+screen_info = pygame.display.Info()
+screen_width = screen_info.current_w
+screen_height = screen_info.current_h
+
+# Set Pygame window size
+window_width = 0  # Set your desired window width
+window_height = 500  # Set your desired window height
+window_size = (window_width, window_height)
+
+# Create Pygame window
+screen = pygame.display.set_mode(window_size)
+
+# Calculate position for the top-left corner of the Pygame window
+top_left_x = (screen_width - window_width) // 2
+top_left_y = (screen_height - window_height) // 2
+
+# Set Pygame window position
+os.environ['SDL_VIDEO_WINDOW_POS'] = f'{top_left_x},{top_left_y}'
 
 # global variable to set number of bact in simulation
 sim_num_bact = 20
@@ -714,64 +733,72 @@ MAX_DATA_POINTS = 20000
 
 # init plot
 def initialize_plot():
-    plt.figure(figsize=(6, 12))  # Set the size of the matplotlib graph
+    plt.figure(figsize=(4, 12))  # Set the size of the matplotlib graph
 
 # update graph function to have real time update
 def update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_lifespan_history, avg_power_history):
     plt.clf()  # clear the previous plot
 
+    plt.subplots_adjust(left=0.1, right=0.9, bottom=0.1, top=0.9, wspace=0.1, hspace=0.1)
+
     # plot bacteria count over time
     plt.subplot(4, 1, 1)
     plt.plot(bacteria_count_history, color='blue')
-    plt.title('Bacteria Count Over Time')
-    plt.xlabel('Time Step')
-    plt.ylabel('Bacteria Count')
+    plt.title('Bacteria Count Over Time',fontsize=8)
+    plt.xlabel('Time Step',fontsize=8)
+    plt.ylabel('Bacteria Count',fontsize=8)
     plt.axhline(y=sim_num_bact, color='gray', linestyle='--', label=f'Starting Count: {sim_num_bact}')
     # ddd the current bacteria count as a dot at the most recent point
     current_bacteria_count = len(bacteria_list)
     plt.scatter(len(bacteria_count_history) - 1, current_bacteria_count, color='red', label=f'Current Bacteria Count: {current_bacteria_count}')
-    plt.legend(loc="upper left")
+    plt.legend(loc="upper left",fontsize=7)
     plt.grid(True)
+    plt.gca().tick_params(axis='both', which='major', labelsize=5)
 
     # plot death count over time
     plt.subplot(4, 1, 2)
     plt.plot(deaths_history, color='red')
-    plt.title('Deaths Over Time')
-    plt.xlabel('Time Step')
-    plt.ylabel('Deaths')
+    plt.title('Deaths Over Time',fontsize=8)
+    plt.xlabel('Time Step',fontsize=8)
+    plt.ylabel('Deaths',fontsize=8)
     # add the current death count as a dot at the most recent point
     current_deaths = deaths
     plt.scatter(len(deaths_history) - 1, current_deaths, color='blue', label=f'Current Death Count: {current_deaths}')
-    plt.legend(loc="upper left")
+    plt.legend(loc="upper left",fontsize=7)
     plt.grid(True)
+    plt.gca().tick_params(axis='both', which='major', labelsize=5)
 
     # plot average traits over time
     plt.subplot(4, 1, 3)
     for trait, history in avg_trait_history.items():
         plt.plot(history, label=f'Average {trait.capitalize()}: {round(history[-1], 2)}')
     plt.plot(avg_power_history, label='Average Power', color='grey')  # Add the average power curve
-    plt.title('Average Traits Over Time')
-    plt.xlabel('Time Step')
-    plt.ylabel('Trait Value')
+    plt.title('Average Traits Over Time',fontsize=8)
+    plt.xlabel('Time Step',fontsize=8)
+    plt.ylabel('Trait Value',fontsize=8)
     current_avg_power = avg_power_history[-1] if avg_power_history else 0
     plt.scatter(len(avg_power_history) - 1, current_avg_power, color='gray', label = f'Current Average Power: {round(current_avg_power,2)}')
-    plt.legend(loc="upper left")
+    plt.legend(loc="upper left",fontsize=6)
     plt.grid(True)
+    plt.gca().tick_params(axis='both', which='major', labelsize=5)
 
     # plot average lifespan over time
     plt.subplot(4, 1, 4)
     plt.plot(avg_lifespan_history, color='black')
-    plt.title('Average Lifespan Over Time')
-    plt.xlabel('Time Step')
-    plt.ylabel('Lifespan')
+    plt.title('Average Lifespan Over Time',fontsize=8)
+    plt.xlabel('Time Step',fontsize=8)
+    plt.ylabel('Lifespan',fontsize=8)
     # add the current average lifespan as a dot at the most recent point
     current_avg_lifespan = avg_lifespan_history[-1] if avg_lifespan_history else 0
     plt.scatter(len(avg_lifespan_history) - 1, current_avg_lifespan, color='gray', label=f'Average Bacteria Lifespan: {round(current_avg_lifespan,2)}')
-    plt.legend(loc="upper left")
+    plt.legend(loc="upper left",fontsize=6)
     plt.grid(True)
 
     # adjust layout to prevent overlap
     plt.tight_layout()
+
+    # Set the font size of tick labels for all axes
+    plt.gca().tick_params(axis='both', which='major', labelsize=5)
     plt.draw()
     plt.pause(0.001)
 
@@ -869,6 +896,28 @@ def main():
         # update the graph if flag is True and bacteria list is not empty
         if update_graph_flag and len(bacteria_list) > 0:
             update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_lifespan_history, avg_power_history)
+            # # Clear the previous plot
+            # plt.clf()
+
+            # # Update Matplotlib plot
+            # update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_lifespan_history, avg_power_history)
+
+            # # Get the current figure and axes
+            # fig = plt.gcf()
+            # ax = plt.gca()
+
+            # # Draw the Matplotlib plot onto the Pygame screen
+            # canvas = FigureCanvasAgg(fig)
+            # canvas.draw()
+            # renderer = canvas.get_renderer()
+            # raw_data = renderer.tostring_rgb()
+            # size = canvas.get_width_height()
+
+            # # Create a Pygame surface from the Matplotlib plot
+            # matplotlib_surface = pygame.image.fromstring(raw_data, size, "RGB")
+
+            # # Blit the Matplotlib plot onto the Pygame screen
+            # screen.blit(matplotlib_surface, (0, 0))
 
         # stop updating graph if bacteria list is empty
         if len(bacteria_list) == 0:
