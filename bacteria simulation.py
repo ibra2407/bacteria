@@ -85,15 +85,15 @@ M_sacrifice = 0.05 # % of maxHP sacrificed to produce child
 WIDTH, HEIGHT = 1600,1000 # default 800,800
 TILE_SIZE = 10
 
-# # if need to bound the simulation area use this
-# LEFT_SIM_BOUND_WIDTH = WIDTH // 4  # width of the left SIM_BOUND (in pixels)
-# RIGHT_SIM_BOUND_WIDTH = WIDTH - LEFT_SIM_BOUND_WIDTH  # width of the right SIM_BOUND (in pixels)
+# if need to bound the simulation area use this
+LEFT_SIM_BOUND_WIDTH = WIDTH // 4  + 10*TILE_SIZE #  left boundary
+RIGHT_SIM_BOUND_WIDTH = WIDTH - LEFT_SIM_BOUND_WIDTH # right boundary
 
-# GRID_WIDTH = RIGHT_SIM_BOUND_WIDTH // TILE_SIZE  # width of the grid (in no. of tiles)
-# GRID_HEIGHT = HEIGHT // TILE_SIZE  # weight of the grid (in no. of tiles)
+GRID_WIDTH = RIGHT_SIM_BOUND_WIDTH // TILE_SIZE  # width of the grid (in no. of tiles)
+GRID_HEIGHT = HEIGHT // TILE_SIZE  # weight of the grid (in no. of tiles)
 
-GRID_WIDTH = WIDTH // TILE_SIZE
-GRID_HEIGHT = HEIGHT // TILE_SIZE
+# GRID_WIDTH = WIDTH // TILE_SIZE
+# GRID_HEIGHT = HEIGHT // TILE_SIZE
 FPS = 120 # clock ticks {FPS} times a real second
 
 # simple RGB colours
@@ -113,8 +113,8 @@ PURPLE = (255, 0, 255)
 # ---- ---- ---- sunlight code ---- ---- ---- 
 # sunlight definitions
 # define sunlight parameters
-SUN_RADIUS = WIDTH // 2
-SUN_CENTER = (WIDTH // 2, HEIGHT // 2)
+SUN_RADIUS = RIGHT_SIM_BOUND_WIDTH // 2 + LEFT_SIM_BOUND_WIDTH
+SUN_CENTER = (RIGHT_SIM_BOUND_WIDTH // 2 + LEFT_SIM_BOUND_WIDTH, HEIGHT // 2)
 
 # define sunlight values for each cell in the grid based on distance from the center
 sunlight_values = [[0] * GRID_WIDTH for _ in range(GRID_HEIGHT)]
@@ -378,10 +378,10 @@ class Bacteria:
             self.x -= step
             self.y -= step
         # ensures bacteria stays within the grid
-        self.x = max(0, min(self.x, GRID_WIDTH - 1))
-        self.y = max(0, min(self.y, GRID_HEIGHT - 1))
-        # self.x = max(LEFT_SIM_BOUND_WIDTH // TILE_SIZE, min(self.x, (WIDTH - 1) // TILE_SIZE))
-        # self.y = max(0, min(self.y, (HEIGHT - 1) // TILE_SIZE))
+        # self.x = max(0, min(self.x, GRID_WIDTH - 1))
+        # self.y = max(0, min(self.y, GRID_HEIGHT - 1))
+        self.x = max(LEFT_SIM_BOUND_WIDTH // TILE_SIZE, min(self.x, (RIGHT_SIM_BOUND_WIDTH - TILE_SIZE) // TILE_SIZE))
+        self.y = max(0, min(self.y, (HEIGHT - 1) // TILE_SIZE))
 
     def chase(self, direction):
         step = max(1, self.legs)
@@ -805,6 +805,10 @@ def update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_
 
 # ---- end of analytics code ----
 
+# draw bounding box for bacteria simulation
+def draw_outline():
+    pygame.draw.rect(screen, ORANGE, (LEFT_SIM_BOUND_WIDTH, 0, RIGHT_SIM_BOUND_WIDTH, HEIGHT), 2)
+
 # ---- ---- main pygame program/ simulation loop ---- ----
 def main():
     global bacteria_list, deaths, MAX_DATA_POINTS
@@ -841,6 +845,7 @@ def main():
                 
         screen.fill(BLACK)
         draw_sun()
+        draw_outline()
 
         # draw and move bacteria 
         for bacteria in bacteria_list:
@@ -896,7 +901,7 @@ def main():
 
         # update the graph if flag is True and bacteria list is not empty
         if update_graph_flag and len(bacteria_list) > 0:
-            # # only to update the "external" plot
+            # only to update the "external" plot
             # update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_lifespan_history, avg_power_history)
 
             # commented out: to run matplotlib graphs inside pygame screen
