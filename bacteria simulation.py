@@ -49,8 +49,8 @@ screen_width = screen_info.current_w
 screen_height = screen_info.current_h
 
 # Set Pygame window size
-window_width = 0  # Set your desired window width
-window_height = 500  # Set your desired window height
+window_width = 1500  # Set your desired window width
+window_height = 750  # Set your desired window height
 window_size = (window_width, window_height)
 
 # Create Pygame window
@@ -82,7 +82,7 @@ M_photosynthesis = 1 # efficacy of photosynthesis
 M_sacrifice = 0.05 # % of maxHP sacrificed to produce child
 
 # pygame screen elements
-WIDTH, HEIGHT = 800,800 # default 800,800
+WIDTH, HEIGHT = 1600,1000 # default 800,800
 TILE_SIZE = 10
 
 # # if need to bound the simulation area use this
@@ -797,8 +797,9 @@ def update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_
     # adjust layout to prevent overlap
     plt.tight_layout()
 
-    # Set the font size of tick labels for all axes
+    # line to set the font size of tick labels for all axes (done for all graphs)
     plt.gca().tick_params(axis='both', which='major', labelsize=5)
+
     plt.draw()
     plt.pause(0.001)
 
@@ -895,29 +896,32 @@ def main():
 
         # update the graph if flag is True and bacteria list is not empty
         if update_graph_flag and len(bacteria_list) > 0:
-            update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_lifespan_history, avg_power_history)
-            # # Clear the previous plot
-            # plt.clf()
-
-            # # Update Matplotlib plot
+            # # only to update the "external" plot
             # update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_lifespan_history, avg_power_history)
 
-            # # Get the current figure and axes
-            # fig = plt.gcf()
-            # ax = plt.gca()
+            # commented out: to run matplotlib graphs inside pygame screen
+            # clear the previous plot
+            plt.clf()
 
-            # # Draw the Matplotlib plot onto the Pygame screen
-            # canvas = FigureCanvasAgg(fig)
-            # canvas.draw()
-            # renderer = canvas.get_renderer()
-            # raw_data = renderer.tostring_rgb()
-            # size = canvas.get_width_height()
+            # update plot
+            update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_lifespan_history, avg_power_history)
 
-            # # Create a Pygame surface from the Matplotlib plot
-            # matplotlib_surface = pygame.image.fromstring(raw_data, size, "RGB")
+            # get the current figure and axes
+            fig = plt.gcf()
+            ax = plt.gca()
 
-            # # Blit the Matplotlib plot onto the Pygame screen
-            # screen.blit(matplotlib_surface, (0, 0))
+            # draw the plot onto pygame screen
+            canvas = FigureCanvasAgg(fig)
+            canvas.draw()
+            renderer = canvas.get_renderer()
+            raw_data = renderer.tostring_rgb()
+            size = canvas.get_width_height()
+
+            # create a pygame surface from the matplotlib plot
+            matplotlib_surface = pygame.image.fromstring(raw_data, size, "RGB")
+
+            # blit the matplotlib plot onto the pygame screen
+            screen.blit(matplotlib_surface, (0, 0))
 
         # stop updating graph if bacteria list is empty
         if len(bacteria_list) == 0:
