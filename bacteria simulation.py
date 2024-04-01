@@ -50,7 +50,8 @@ bloodHP = 0.3
 # multipliers for trait impacts
 M_absorption = 2
 M_membrane = 1
-
+M_photosynthesis = 1
+M_sacrifice = 0.05 # % of maxHP sacrificed to produce child
 # pygame screen elements
 WIDTH, HEIGHT = 800,800 # default 800,800
 TILE_SIZE = 10
@@ -80,6 +81,7 @@ BLUE = (0, 0, 255)
 CYAN = (0, 255, 255)
 PURPLE = (255, 0, 255)
 
+# ---- ---- ---- sunlight code ---- ---- ---- 
 # sunlight definitions
 # define sunlight parameters
 SUN_RADIUS = WIDTH // 2
@@ -105,6 +107,7 @@ def draw_sun():
             color = (int(255 * sunlight), int(255 * sunlight), 0)  # pale yellow color based on sunlight value
             rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
             pygame.draw.rect(screen, color, rect)
+# ---- ---- ---- end of sunlight code ---- ---- ----
 
 
 # ---- ---- ---- ---- bacteria class ---- ---- ---- ----
@@ -440,7 +443,7 @@ class Bacteria:
                 # check if the bacteria's HP is below its matingHP threshold
                 if self.hp < matingHP * self.maxHP:
                     # recover HP based on sunlight value and photosynthesis trait
-                    hp_gain = sunlight_values[self.y][self.x] * (self.photosynthesis+1) # will still gain at some hp
+                    hp_gain = sunlight_values[self.y][self.x] * (self.photosynthesis+1) * M_photosynthesis # will still gain at some hp; multiplier on photosynthesis
                     self.hp += hp_gain
                     # ensure HP doesn't exceed maxHP
                     self.hp = min(self.hp, self.maxHP)
@@ -469,33 +472,35 @@ class Bacteria:
     def mate(self, bacteria_list):
         for bacteria in bacteria_list:
             # set the range
-            pheromone_range = 2
+            pheromone_range = 2 # can only mate if within 2 cells
             # check if any other bacteria is within mating range
             if bacteria != self and abs(self.x - bacteria.x) <= pheromone_range and abs(self.y - bacteria.y) <= pheromone_range: # only within range
                 # both must be in mating mood
                 if self.MatingOn and bacteria.MatingOn:
                     # check cooldown before mating
                     current_time = pygame.time.get_ticks()
-                    if current_time - self.last_mate_time >= Bacteria.MATING_COOLDOWN:
+                    if (current_time - self.last_mate_time >= Bacteria.MATING_COOLDOWN) and (current_time - bacteria.last_mate_time >= Bacteria.MATING_COOLDOWN):
                         child_dna = self.inherit(self.dna, bacteria.dna)
                         if child_dna == "":
-                            print("mating failed")
+                            # print("mating failed")
+                            break
                         else:
                             # create child with inherited traits and DNA
                             child = Bacteria(self.x, self.y, isChild=True, dna = child_dna)
                             # child should spawn where the parents mated
                             child.x = (self.x + bacteria.x) // 2
                             child.y = (self.y + bacteria.y) // 2
-                            # # child shd start with half hp
+                            # # child shd start with half hp - now all bacteria start with half hp
                             # child.hp = 0.5*child.maxHP
 
                             # append child to bacteria list
                             bacteria_list.append(child)
 
-                            # parents sacrifice 10% of current hp to create child
-                            self.hp -= 50
-                            bacteria.hp -= 50
+                            # parents sacrifice % of total hp to create child
+                            self.hp -= M_sacrifice*self.maxHP
+                            bacteria.hp -= M_sacrifice*bacteria.maxHP
 
+                            # set a timer so that next mating opportunity isnt immediate; curb parent-child mating
                             self.last_mate_time = current_time
 
                             # print(f"Bacteria {self.colour_name} mated with {bacteria.colour_name} and gave birth to {child.colour_name}")
@@ -574,7 +579,7 @@ class Bacteria:
         # ensure the number of 1s is at least the max of the parents' number of 1s
         max_ones = max(dna1.count('1'), dna2.count('1'))
 
-        # replace remaining 0s randomly until achieving desired number of 1s
+        # replace remaining 0s randomly until achieving desired number of 1s (diversity)
         child_ones = child_dna.count('1')
         while child_ones < max_ones:
             zero_positions = [pos for pos, char in enumerate(child_dna) if char == '0']
@@ -586,7 +591,7 @@ class Bacteria:
                 break
 
         # step 5:
-        # 50% chance, add an extra 1 (mutation)
+        # 50% chance, add an extra 1 (mutation/evolution)
         if random.random() < 0.5:
             print("lucky")
             zero_positions = [pos for pos, char in enumerate(child_dna) if char == '0']
@@ -681,40 +686,28 @@ class Bacteria:
         pygame.draw.rect(screen, BLACK, [hp_bar_x, hp_bar_y, bar_width, 5])
         pygame.draw.rect(screen, hp_color, [hp_bar_x, hp_bar_y, hp_bar_width, 5])
 
-
-    
     # ---- END OF PYGAME SCREEN FUNCTIONS ----
             
 
-# ---- ---- ---- ---- end of Bacteria class
+# ---- ---- ---- ---- end of Bacteria class ---- ---- ---- ---- 
 
-# pygame setup
+# ---- ---- ---- ---- pygame setup ---- ---- ---- ---- 
 screen = pygame.display.set_mode( (WIDTH,HEIGHT) ) #takes in a tuple as argument; not 2 numbers
 clock = pygame.time.Clock()
 
-def draw_grid():
-    for row in range(GRID_HEIGHT):
-        pygame.draw.line(screen,BLACK,start_pos=(0,row*TILE_SIZE),end_pos=(WIDTH,row*TILE_SIZE))
-    for col in range(GRID_WIDTH):
-        pygame.draw.line(screen,BLACK,start_pos=(col*TILE_SIZE,0),end_pos=(col*TILE_SIZE,HEIGHT))
-
-# draw bounding box for bacteria simulation
-# def draw_outline():
-#     pygame.draw.rect(screen, BLACK, (LEFT_SIM_BOUND_WIDTH, 0, RIGHT_SIM_BOUND_WIDTH, HEIGHT), 2)
-
 # define global variables for game
 bacteria_list = []
-
-# define analytics variables
 deaths = 0
 
+# ---- analytics code ----
 # max history limit
 MAX_DATA_POINTS = 20000
+
 # init plot
 def initialize_plot():
     plt.figure(figsize=(8, 12))  # Set the size of the matplotlib graph
 
-# Update graph function to include the average lifespan plot
+# update graph function to have real time update
 def update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_lifespan_history, avg_power_history):
     plt.clf()  # clear the previous plot
 
@@ -762,7 +755,7 @@ def update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_
     plt.title('Average Lifespan Over Time')
     plt.xlabel('Time Step')
     plt.ylabel('Lifespan')
-    # Add the current average lifespan as a dot at the most recent point
+    # add the current average lifespan as a dot at the most recent point
     current_avg_lifespan = avg_lifespan_history[-1] if avg_lifespan_history else 0
     plt.scatter(len(avg_lifespan_history) - 1, current_avg_lifespan, color='gray', label=f'Average Bacteria Lifespan: {round(current_avg_lifespan,2)}')
     plt.legend(loc="upper left")
@@ -773,7 +766,9 @@ def update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_
     plt.draw()
     plt.pause(0.001)
 
-# main pygame program
+# ---- end of analytics code ----
+
+# ---- ---- main pygame program/ simulation loop ---- ----
 def main():
     global bacteria_list, deaths, MAX_DATA_POINTS
     INIT_NUM_BACTERIA = sim_num_bact
@@ -831,7 +826,7 @@ def main():
         bacteria_count_history.append(len(bacteria_list))
         deaths_history.append(deaths)
 
-        # Calculate average traits and lifespan
+        # real time update to average traits and lifespan
         if len(bacteria_list) > 0:
             total_traits = {'tendrils': 0, 'absorption': 0, 'membrane': 0, 'photosynthesis': 0, 'legs': 0, 'maxHP': 0}
             total_lifespan = 0
@@ -848,7 +843,7 @@ def main():
             avg_lifespan = total_lifespan / num_bacteria
             avg_power = total_power / num_bacteria
 
-            # Append average trait values and lifespan to their respective history lists
+            # append average trait values and lifespan to their respective history lists
             for trait, value in avg_trait_values.items():
                 avg_trait_history[trait].append(value)
             avg_lifespan_history.append(avg_lifespan)
@@ -884,6 +879,17 @@ if __name__ == "__main__":
     main()
 
 # archive codes
+
+# def draw_grid():
+#     for row in range(GRID_HEIGHT):
+#         pygame.draw.line(screen,BLACK,start_pos=(0,row*TILE_SIZE),end_pos=(WIDTH,row*TILE_SIZE))
+#     for col in range(GRID_WIDTH):
+#         pygame.draw.line(screen,BLACK,start_pos=(col*TILE_SIZE,0),end_pos=(col*TILE_SIZE,HEIGHT))
+
+# draw bounding box for bacteria simulation
+# def draw_outline():
+#     pygame.draw.rect(screen, BLACK, (LEFT_SIM_BOUND_WIDTH, 0, RIGHT_SIM_BOUND_WIDTH, HEIGHT), 2)
+
     # highlight_rect = pygame.Rect(3*TILE_SIZE, 3*TILE_SIZE, TILE_SIZE, TILE_SIZE)
         # pygame.draw.rect(screen, (255, 0, 0), highlight_rect, 0)
         # here we use draw_grid to draw the positions on top of the grid
