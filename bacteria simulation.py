@@ -5,6 +5,8 @@ Main Logic:
 3. play with parameters (ranges, values based on traits) (3)
 ** currently "blooms" still happen - rapid breeding. we want a more controlled, chill simulation
 ** also quite hard to actually keep track of who is doing what
+1. make absorb more complex - only part of membrane tanks dmg, but dmg still goes thru
+
 
 Analysis:
 2. return output properly in a list, try show steady state parameters (need to find this too), link to pt2 of SMA - burn in period, true expected steady state given a set of parameters (2)
@@ -47,11 +49,18 @@ sim_num_bact = 20
 matingHP = 0.7
 # set bloodlust hp
 bloodHP = 0.3
+
 # multipliers for trait impacts
+
 M_absorption = 2
-M_membrane = 1
-M_photosynthesis = 1
+M_membrane = 0.9 # logarithmic? scaling; quite sensitive
+# absorb_damage = min(self.absorption*M_absorption*((bacteria.membrane/16)**M_membrane), bacteria.hp)
+
+M_photosynthesis = 1 # efficacy of photosynthesis
+# hp_gain = sunlight_values[self.y][self.x] * (self.photosynthesis+1) * M_photosynthesis
+
 M_sacrifice = 0.05 # % of maxHP sacrificed to produce child
+
 # pygame screen elements
 WIDTH, HEIGHT = 800,800 # default 800,800
 TILE_SIZE = 10
@@ -409,12 +418,11 @@ class Bacteria:
         # check if any other bacteria is within the bite range
         for bacteria in bacteria_list:
             if bacteria != self and abs(self.x - bacteria.x) <= absorb_range and abs(self.y - bacteria.y) <= absorb_range: # only within range
-
                 # case 1 - both BL: only higher absorption will absorb
                 if self.BloodlustOn and bacteria.BloodlustOn:
                     # sub case: higher absoption will win out
                     if self.absorption > bacteria.absorption:
-                        absorb_damage = min(self.absorption*M_absorption - bacteria.membrane*M_membrane, bacteria.hp)  # set to depend on absorption value (20 is just example); also prevents absorption from regaining more than other bacterias hp
+                        absorb_damage = min(self.absorption*M_absorption*((bacteria.membrane/16)**M_membrane), bacteria.hp)  # set to depend on absorption value (20 is just example); also prevents absorption from regaining more than other bacterias hp
                         if absorb_damage < 1: # if the other guy armor is cracked, deal only 1 dmg
                             absorb_damage = 1
                         self.hp += round(absorb_damage,2)
@@ -593,7 +601,7 @@ class Bacteria:
         # step 5:
         # 50% chance, add an extra 1 (mutation/evolution)
         if random.random() < 0.5:
-            print("lucky")
+            # print("lucky")
             zero_positions = [pos for pos, char in enumerate(child_dna) if char == '0']
             if zero_positions:
                 random_zero_position = random.choice(zero_positions)
@@ -705,7 +713,7 @@ MAX_DATA_POINTS = 20000
 
 # init plot
 def initialize_plot():
-    plt.figure(figsize=(8, 12))  # Set the size of the matplotlib graph
+    plt.figure(figsize=(6, 12))  # Set the size of the matplotlib graph
 
 # update graph function to have real time update
 def update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_lifespan_history, avg_power_history):
