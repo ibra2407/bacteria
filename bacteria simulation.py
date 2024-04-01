@@ -14,7 +14,8 @@ Analysis:
 
 Aesthetics:
 1. UI design of bacteria & background (graphics) (2)
-2. menu screen (to set parameters or smth) (2)
+2. menu screen (to set parameters or smth) --> take out ALL possible parameters and ensure those parameter ranges are valid; define ranges (2)
+3. for website -> try to make all of it into one single screen? so can use pygbag to encapsulate everything
 
 Performance:
 1. make the matplotlib a bit smoother and can actually use to see shit (3)
