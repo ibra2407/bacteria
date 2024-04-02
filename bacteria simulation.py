@@ -15,11 +15,9 @@ Analysis:
 Aesthetics:
 1. UI design of bacteria & background (graphics) (2)
 2. menu screen (to set parameters or smth) --> take out ALL possible parameters and ensure those parameter ranges are valid; define ranges (2)
-3. for website -> try to make all of it into one single screen? so can use pygbag to encapsulate everything
+3. for website -> try to make all of it into one single screen? so can use pygbag to encapsulate everything (how to turn off the external mpl screen??)
 
 Performance:
-1. make the matplotlib a bit smoother and can actually use to see shit (3)
-2. limit number of bacteria
 
 Completed:
 1. investigate "blooming" of population, find out why child always dies so fast (2) - mating function issue
@@ -29,6 +27,8 @@ Completed:
 5. absorb function fix -> enable any bacteria to eat each other; only if BL then rules change
 6. photosynthesis - sunlight zones (1)
 1. add init number as line on graph (1)
+1. make the matplotlib a bit smoother and can actually use to see shit (3)
+2. limit number of bacteria// soln: just run slower; showcase long term in video instead
 '''
 
 # install these libraries
@@ -672,7 +672,7 @@ class Bacteria:
             text_mating = font2.render("Mating", True, BLUE)
             screen.blit(text_mating, (self.x * TILE_SIZE, self.y * TILE_SIZE + 3*TILE_SIZE))
         
-        # Draw the HP bar over the bacteria object
+        # draw the HP bar over the bacteria object
         self.draw_hp_bar(screen)
 
     # function to make sure tendrils show each time step
@@ -690,7 +690,7 @@ class Bacteria:
     
     def draw_hp_bar(self, screen):
         # width of the HP bar (pixels)
-        bar_width = 50
+        bar_width = 50 # shd be always 50px wide - if see long bars cnfm self.hp not capped at self.maxHP
         hp_bar_width = int((self.hp / self.maxHP) * bar_width)
 
         # color of the HP bar based on the HP level; follow thresholds
