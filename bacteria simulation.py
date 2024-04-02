@@ -93,7 +93,7 @@ GRID_HEIGHT = HEIGHT // TILE_SIZE  # weight of the grid (in no. of tiles)
 
 # GRID_WIDTH = WIDTH // TILE_SIZE
 # GRID_HEIGHT = HEIGHT // TILE_SIZE
-FPS = 120 # clock ticks {FPS} times a real second
+FPS = 5 # clock ticks {FPS} times a real second
 
 # simple RGB colours
 BLACK = (0, 0, 0)
@@ -806,7 +806,7 @@ def update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_
 
 # draw bounding box for bacteria simulation
 def draw_outline():
-    pygame.draw.rect(screen, GREEN, (0, 0, SIM_BOUND_WIDTH, HEIGHT), 4)
+    pygame.draw.rect(screen, GREY, (0, 0, SIM_BOUND_WIDTH, HEIGHT), 4)
 
 # ---- ---- main pygame program/ simulation loop ---- ----
 def main():
@@ -897,7 +897,7 @@ def main():
         if len(deaths_history) > MAX_DATA_POINTS:
             deaths_history = deaths_history[-MAX_DATA_POINTS:]
 
-        # update the graph if flag is True and bacteria list is not empty
+        # update the graph if flag is true and bacteria list is not empty
         if update_graph_flag and len(bacteria_list) > 0:
             # only to update the "external" plot
             # update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_lifespan_history, avg_power_history)
@@ -936,7 +936,7 @@ def main():
 
         # updates time step
         pygame.display.update()
-        pygame.display.flip()
+        # pygame.display.flip()
 
     pygame.quit()
 
