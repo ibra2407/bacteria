@@ -73,16 +73,16 @@ bloodHP = 0.3
 # multipliers for trait impacts
 
 M_absorption = 2
-M_membrane = 0.9 # logarithmic? scaling; quite sensitive
+M_membrane = 0.8 # logarithmic? scaling; quite sensitive
 # absorb_damage = min(self.absorption*M_absorption*((bacteria.membrane/16)**M_membrane), bacteria.hp)
 
-M_photosynthesis = 1 # efficacy of photosynthesis
+M_photosynthesis = 2 # efficacy of photosynthesis
 # hp_gain = sunlight_values[self.y][self.x] * (self.photosynthesis+1) * M_photosynthesis
 
-M_sacrifice = 0.05 # % of maxHP sacrificed to produce child
+M_sacrifice = 0.1 # % of maxHP sacrificed to produce child
 
 # pygame screen elements
-WIDTH, HEIGHT = 1500,1000 # default 800,800
+WIDTH, HEIGHT = 1500,1000 # default 800,800 # width need to be div by 3
 TILE_SIZE = 10
 
 # if need to bound the simulation area use this
@@ -806,7 +806,7 @@ def update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_
 
 # draw bounding box for bacteria simulation
 def draw_outline():
-    pygame.draw.rect(screen, ORANGE, (0, 0, SIM_BOUND_WIDTH, HEIGHT), 2)
+    pygame.draw.rect(screen, GREEN, (0, 0, SIM_BOUND_WIDTH, HEIGHT), 4)
 
 # ---- ---- main pygame program/ simulation loop ---- ----
 def main():
