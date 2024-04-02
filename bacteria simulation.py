@@ -43,24 +43,24 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 # initialise a pygame instance
 pygame.init()
 
-# Determine screen resolution
+# screen resolution
 screen_info = pygame.display.Info()
 screen_width = screen_info.current_w
 screen_height = screen_info.current_h
 
-# Set Pygame window size
-window_width = 1500  # Set your desired window width
-window_height = 750  # Set your desired window height
-window_size = (window_width, window_height)
+# set pygame window size & where it pops up on screen
+window_width = 1500
+window_height = 750
+# window_size = (window_width, window_height)
 
-# Create Pygame window
-screen = pygame.display.set_mode(window_size)
+# # create pygame window
+# screen = pygame.display.set_mode(window_size)
 
-# Calculate position for the top-left corner of the Pygame window
+# calculate position for the top-left corner of the pygame window
 top_left_x = (screen_width - window_width) // 2
 top_left_y = (screen_height - window_height) // 2
 
-# Set Pygame window position
+# set Pygame window position
 os.environ['SDL_VIDEO_WINDOW_POS'] = f'{top_left_x},{top_left_y}'
 
 # global variable to set number of bact in simulation
@@ -82,14 +82,13 @@ M_photosynthesis = 1 # efficacy of photosynthesis
 M_sacrifice = 0.05 # % of maxHP sacrificed to produce child
 
 # pygame screen elements
-WIDTH, HEIGHT = 1600,1000 # default 800,800
+WIDTH, HEIGHT = 1500,1000 # default 800,800
 TILE_SIZE = 10
 
 # if need to bound the simulation area use this
-LEFT_SIM_BOUND_WIDTH = WIDTH // 4  + 10*TILE_SIZE #  left boundary
-RIGHT_SIM_BOUND_WIDTH = WIDTH - LEFT_SIM_BOUND_WIDTH # right boundary
+SIM_BOUND_WIDTH =  2 * (WIDTH // 3) # length of screen from 0 to rightmost boundary
 
-GRID_WIDTH = RIGHT_SIM_BOUND_WIDTH // TILE_SIZE  # width of the grid (in no. of tiles)
+GRID_WIDTH = WIDTH // TILE_SIZE  # width of the grid (in no. of tiles)
 GRID_HEIGHT = HEIGHT // TILE_SIZE  # weight of the grid (in no. of tiles)
 
 # GRID_WIDTH = WIDTH // TILE_SIZE
@@ -113,8 +112,8 @@ PURPLE = (255, 0, 255)
 # ---- ---- ---- sunlight code ---- ---- ---- 
 # sunlight definitions
 # define sunlight parameters
-SUN_RADIUS = RIGHT_SIM_BOUND_WIDTH // 2 + LEFT_SIM_BOUND_WIDTH
-SUN_CENTER = (RIGHT_SIM_BOUND_WIDTH // 2 + LEFT_SIM_BOUND_WIDTH, HEIGHT // 2)
+SUN_RADIUS = SIM_BOUND_WIDTH // 2
+SUN_CENTER = (SIM_BOUND_WIDTH // 2, HEIGHT // 2)
 
 # define sunlight values for each cell in the grid based on distance from the center
 sunlight_values = [[0] * GRID_WIDTH for _ in range(GRID_HEIGHT)]
@@ -380,7 +379,7 @@ class Bacteria:
         # ensures bacteria stays within the grid
         # self.x = max(0, min(self.x, GRID_WIDTH - 1))
         # self.y = max(0, min(self.y, GRID_HEIGHT - 1))
-        self.x = max(LEFT_SIM_BOUND_WIDTH // TILE_SIZE, min(self.x, (RIGHT_SIM_BOUND_WIDTH - TILE_SIZE) // TILE_SIZE))
+        self.x = max(0, min(self.x, (SIM_BOUND_WIDTH - 3) // TILE_SIZE))
         self.y = max(0, min(self.y, (HEIGHT - 1) // TILE_SIZE))
 
     def chase(self, direction):
@@ -807,7 +806,7 @@ def update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_
 
 # draw bounding box for bacteria simulation
 def draw_outline():
-    pygame.draw.rect(screen, ORANGE, (LEFT_SIM_BOUND_WIDTH, 0, RIGHT_SIM_BOUND_WIDTH, HEIGHT), 2)
+    pygame.draw.rect(screen, ORANGE, (0, 0, SIM_BOUND_WIDTH, HEIGHT), 2)
 
 # ---- ---- main pygame program/ simulation loop ---- ----
 def main():
@@ -820,7 +819,6 @@ def main():
     avg_lifespan_history = []
     avg_power_history = []
     
-
     # flag to stop graph
     update_graph_flag = True
     
@@ -843,7 +841,7 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
                 
-        screen.fill(BLACK)
+        screen.fill(WHITE)
         draw_sun()
         draw_outline()
 
@@ -926,7 +924,7 @@ def main():
             matplotlib_surface = pygame.image.fromstring(raw_data, size, "RGB")
 
             # blit the matplotlib plot onto the pygame screen
-            screen.blit(matplotlib_surface, (0, 0))
+            screen.blit(matplotlib_surface, (SIM_BOUND_WIDTH, 0))
 
         # stop updating graph if bacteria list is empty
         if len(bacteria_list) == 0:
