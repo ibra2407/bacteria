@@ -92,7 +92,7 @@ GRID_HEIGHT = HEIGHT // TILE_SIZE  # weight of the grid (in no. of tiles)
 
 # GRID_WIDTH = WIDTH // TILE_SIZE
 # GRID_HEIGHT = HEIGHT // TILE_SIZE
-FPS = 5 # clock ticks {FPS} times a real second
+FPS = 240 # clock ticks {FPS} times a real second
 
 # simple RGB colours
 BLACK = (0, 0, 0)
@@ -746,7 +746,7 @@ def update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_
     plt.xlabel('Time Step',fontsize=8)
     plt.ylabel('Bacteria Count',fontsize=8)
     plt.axhline(y=sim_num_bact, color='gray', linestyle='--', label=f'Starting Count: {sim_num_bact}')
-    # ddd the current bacteria count as a dot at the most recent point
+    # add the current bacteria count as a dot at the most recent point
     current_bacteria_count = len(bacteria_list)
     plt.scatter(len(bacteria_count_history) - 1, current_bacteria_count, color='red', label=f'Current Bacteria Count: {current_bacteria_count}')
     plt.legend(loc="upper left",fontsize=7)
@@ -808,7 +808,8 @@ def draw_outline():
     pygame.draw.rect(screen, GREY, (0, 0, SIM_BOUND_WIDTH, HEIGHT), 4)
 
 # ---- ---- main pygame program/ simulation loop ---- ----
-def main():
+
+def run_simulation():
     global bacteria_list, deaths, MAX_DATA_POINTS
     INIT_NUM_BACTERIA = sim_num_bact
 
@@ -825,7 +826,7 @@ def main():
 
     # create initial bacteria
     for _ in range(INIT_NUM_BACTERIA):
-        x = random.randint(0, GRID_WIDTH - 1)
+        x = random.randint(0, SIM_BOUND_WIDTH//TILE_SIZE - 1)
         y = random.randint(0, GRID_HEIGHT - 1)
         bacteria_list.append(Bacteria(x, y))
     
@@ -940,7 +941,7 @@ def main():
     pygame.quit()
 
 if __name__ == "__main__":
-    main()
+    run_simulation()
 
 # archive codes
 
