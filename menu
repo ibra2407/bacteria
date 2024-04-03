@@ -1,1 +1,3 @@
-from bacteria-simulation import bacteria simulation
+from bacteria import run_simulation
+
+run_simulation()
