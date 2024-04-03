@@ -826,7 +826,7 @@ def update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_
                 label=f'Current Bacteria Count: {current_bacteria_count}')
     plt.legend(loc="upper left", fontsize=7)
     plt.grid(True)
-    plt.gca().tick_params(axis='both', which='major', labelsize=5)
+    plt.gca().tick_params(axis='both', which='major', labelsize=6)
 
     # plot death count over time
     plt.subplot(4, 1, 2)
@@ -839,7 +839,7 @@ def update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_
     plt.scatter(len(deaths_history) - 1, current_deaths, color='blue', label=f'Current Death Count: {current_deaths}')
     plt.legend(loc="upper left", fontsize=7)
     plt.grid(True)
-    plt.gca().tick_params(axis='both', which='major', labelsize=5)
+    plt.gca().tick_params(axis='both', which='major', labelsize=6)
 
     # plot average traits over time
     plt.subplot(4, 1, 3)
@@ -852,9 +852,9 @@ def update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_
     current_avg_power = avg_power_history[-1] if avg_power_history else 0
     plt.scatter(len(avg_power_history) - 1, current_avg_power, color='gray',
                 label=f'Current Average Power: {round(current_avg_power, 2)}')
-    plt.legend(loc="upper left", fontsize=6)
+    plt.legend(loc="upper left", fontsize=7)
     plt.grid(True)
-    plt.gca().tick_params(axis='both', which='major', labelsize=5)
+    plt.gca().tick_params(axis='both', which='major', labelsize=6)
 
     # plot average lifespan over time
     plt.subplot(4, 1, 4)
@@ -866,8 +866,9 @@ def update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_
     current_avg_lifespan = avg_lifespan_history[-1] if avg_lifespan_history else 0
     plt.scatter(len(avg_lifespan_history) - 1, current_avg_lifespan, color='gray',
                 label=f'Average Bacteria Lifespan: {round(current_avg_lifespan, 2)}')
-    plt.legend(loc="upper left", fontsize=6)
+    plt.legend(loc="upper left", fontsize=7)
     plt.grid(True)
+    plt.gca().tick_params(axis='both', which='major', labelsize=6)
 
     # adjust layout to prevent overlap
     plt.tight_layout()
