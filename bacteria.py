@@ -82,6 +82,9 @@ M_photosynthesis = 2 # efficacy of photosynthesis
 
 M_sacrifice = 0.1 # % of maxHP sacrificed to produce child
 
+# cost of living (hp deduction each time step)
+C_living = 1
+
 # pygame screen elements
 WIDTH, HEIGHT = 1500,1000 # default 800,800 # width need to be div by 3
 TILE_SIZE = 10
@@ -255,7 +258,7 @@ class Bacteria:
         prob_photosynthesis = random.uniform(0,1)
         # print(prob_movement, prob_hunt, prob_mate) # prints probabilities at each time step
 
-        self.hp -= 1 # on top of movement hp deduction
+        self.hp -= C_living # on top of movement hp deduction
 
         # when just spawn, sit still for a while
 
@@ -385,7 +388,7 @@ class Bacteria:
 
     def chase(self, direction):
         step = max(1, self.legs)
-        self.hp -= math.floor(self.legs/2)
+        self.hp -= C_living + math.floor(self.legs/2)
         self.move(direction, step)
     
     # running logic against hungry bacteria
@@ -404,12 +407,12 @@ class Bacteria:
         opposite_direction = opposite_directions.get(direction, 'top')
         step = max(1, self.legs)
         # hp cost too
-        self.hp -= math.floor(self.legs/2)
+        self.hp -= C_living + math.floor(self.legs/2)
         self.move(opposite_direction, step)
                         
     def roam(self): # movement pattern ROAM
         # reduce hp as it roams - costs energy to move// remove later
-        self.hp -= 1
+        self.hp -= C_living
         # generate random direction and move
         direction = random.choice(['top', 'top_right', 'right', 'down_right', 'down', 'down_left', 'left', 'top_left'])
         step = 1
@@ -417,7 +420,7 @@ class Bacteria:
     
     def frantic(self): # movement pattern ROAM
         # reduce hp as it roams - costs energy to move// remove later
-        self.hp -= 1
+        self.hp -= C_living
         # generate random direction and move
         direction = random.choice(['top', 'top_right', 'right', 'down_right', 'down', 'down_left', 'left', 'top_left'])
         step = 4
