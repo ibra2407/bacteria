@@ -5,8 +5,6 @@ Main Logic:
 3. play with parameters (ranges, values based on traits) (3)
 ** currently "blooms" still happen - rapid breeding. we want a more controlled, chill simulation
 ** also quite hard to actually keep track of who is doing what
-1. make absorb more complex - only part of membrane tanks dmg, but dmg still goes thru
-
 
 Analysis:
 2. return output properly in a list, try show steady state parameters (need to find this too), link to pt2 of SMA - burn in period, true expected steady state given a set of parameters (2)
@@ -29,6 +27,7 @@ Completed:
 1. add init number as line on graph (1)
 1. make the matplotlib a bit smoother and can actually use to see shit (3)
 2. limit number of bacteria// soln: just run slower; showcase long term in video instead
+1. make absorb more complex - only part of membrane tanks dmg, but dmg still goes thru
 '''
 
 # install these libraries
