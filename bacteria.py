@@ -14,7 +14,7 @@ Aesthetics:
 1. UI design of bacteria & background (graphics) (2)
 2. menu screen (to set parameters or smth) --> take out ALL possible parameters and ensure those parameter ranges are valid; define ranges (2)
 3. for website -> try to make all of it into one single screen? so can use pygbag to encapsulate everything (how to turn off the external mpl screen??)
-4. wrap up in pygbag
+4. wrap up in pygbag into WASM
 
 Performance:
 
@@ -33,6 +33,7 @@ Completed:
 
 # install these libraries
 import pygame
+import io
 import os
 import random
 import math
@@ -731,39 +732,112 @@ deaths = 0
 MAX_DATA_POINTS = 20000
 
 # init plot
-def initialize_plot():
-    plt.figure(figsize=(4, 12))  # Set the size of the matplotlib graph
+# def initialize_plot():
+#     plt.figure(figsize=(4, 12))  # Set the size of the matplotlib graph
 
 # update graph function to have real time update
+# def update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_lifespan_history, avg_power_history):
+#     plt.clf()  # clear the previous plot
+
+#     plt.subplots_adjust(left=0.1, right=0.9, bottom=0.1, top=0.9, wspace=0.1, hspace=0.1)
+
+#     # plot bacteria count over time
+#     plt.subplot(4, 1, 1)
+#     plt.plot(bacteria_count_history, color='blue')
+#     plt.title('Bacteria Count Over Time',fontsize=8)
+#     plt.xlabel('Time Step',fontsize=8)
+#     plt.ylabel('Bacteria Count',fontsize=8)
+#     plt.axhline(y=sim_num_bact, color='gray', linestyle='--', label=f'Starting Count: {sim_num_bact}')
+#     # add the current bacteria count as a dot at the most recent point
+#     current_bacteria_count = len(bacteria_list)
+#     plt.scatter(len(bacteria_count_history) - 1, current_bacteria_count, color='red', label=f'Current Bacteria Count: {current_bacteria_count}')
+#     plt.legend(loc="upper left",fontsize=7)
+#     plt.grid(True)
+#     plt.gca().tick_params(axis='both', which='major', labelsize=5)
+
+#     # plot death count over time
+#     plt.subplot(4, 1, 2)
+#     plt.plot(deaths_history, color='red')
+#     plt.title('Deaths Over Time',fontsize=8)
+#     plt.xlabel('Time Step',fontsize=8)
+#     plt.ylabel('Deaths',fontsize=8)
+#     # add the current death count as a dot at the most recent point
+#     current_deaths = deaths
+#     plt.scatter(len(deaths_history) - 1, current_deaths, color='blue', label=f'Current Death Count: {current_deaths}')
+#     plt.legend(loc="upper left",fontsize=7)
+#     plt.grid(True)
+#     plt.gca().tick_params(axis='both', which='major', labelsize=5)
+
+#     # plot average traits over time
+#     plt.subplot(4, 1, 3)
+#     for trait, history in avg_trait_history.items():
+#         plt.plot(history, label=f'Average {trait.capitalize()}: {round(history[-1], 2)}')
+#     plt.plot(avg_power_history, label='Average Power', color='grey')  # Add the average power curve
+#     plt.title('Average Traits Over Time',fontsize=8)
+#     plt.xlabel('Time Step',fontsize=8)
+#     plt.ylabel('Trait Value',fontsize=8)
+#     current_avg_power = avg_power_history[-1] if avg_power_history else 0
+#     plt.scatter(len(avg_power_history) - 1, current_avg_power, color='gray', label = f'Current Average Power: {round(current_avg_power,2)}')
+#     plt.legend(loc="upper left",fontsize=6)
+#     plt.grid(True)
+#     plt.gca().tick_params(axis='both', which='major', labelsize=5)
+
+#     # plot average lifespan over time
+#     plt.subplot(4, 1, 4)
+#     plt.plot(avg_lifespan_history, color='black')
+#     plt.title('Average Lifespan Over Time',fontsize=8)
+#     plt.xlabel('Time Step',fontsize=8)
+#     plt.ylabel('Lifespan',fontsize=8)
+#     # add the current average lifespan as a dot at the most recent point
+#     current_avg_lifespan = avg_lifespan_history[-1] if avg_lifespan_history else 0
+#     plt.scatter(len(avg_lifespan_history) - 1, current_avg_lifespan, color='gray', label=f'Average Bacteria Lifespan: {round(current_avg_lifespan,2)}')
+#     plt.legend(loc="upper left",fontsize=6)
+#     plt.grid(True)
+
+#     # adjust layout to prevent overlap
+#     plt.tight_layout()
+
+#     # line to set the font size of tick labels for all axes (done for all graphs)
+#     plt.gca().tick_params(axis='both', which='major', labelsize=5)
+
+#     plt.draw()
+#     plt.pause(0.001)
+
+# modify the update_graph function as follows
+import os
+
+# Modify the update_graph function to save the plot as an image file and then load it using Pygame
+
 def update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_lifespan_history, avg_power_history):
     plt.clf()  # clear the previous plot
-
+    plt.figure(figsize=(5, 10))
     plt.subplots_adjust(left=0.1, right=0.9, bottom=0.1, top=0.9, wspace=0.1, hspace=0.1)
 
     # plot bacteria count over time
     plt.subplot(4, 1, 1)
     plt.plot(bacteria_count_history, color='blue')
-    plt.title('Bacteria Count Over Time',fontsize=8)
-    plt.xlabel('Time Step',fontsize=8)
-    plt.ylabel('Bacteria Count',fontsize=8)
+    plt.title('Bacteria Count Over Time', fontsize=8)
+    plt.xlabel('Time Step', fontsize=8)
+    plt.ylabel('Bacteria Count', fontsize=8)
     plt.axhline(y=sim_num_bact, color='gray', linestyle='--', label=f'Starting Count: {sim_num_bact}')
     # add the current bacteria count as a dot at the most recent point
     current_bacteria_count = len(bacteria_list)
-    plt.scatter(len(bacteria_count_history) - 1, current_bacteria_count, color='red', label=f'Current Bacteria Count: {current_bacteria_count}')
-    plt.legend(loc="upper left",fontsize=7)
+    plt.scatter(len(bacteria_count_history) - 1, current_bacteria_count, color='red',
+                label=f'Current Bacteria Count: {current_bacteria_count}')
+    plt.legend(loc="upper left", fontsize=7)
     plt.grid(True)
     plt.gca().tick_params(axis='both', which='major', labelsize=5)
 
     # plot death count over time
     plt.subplot(4, 1, 2)
     plt.plot(deaths_history, color='red')
-    plt.title('Deaths Over Time',fontsize=8)
-    plt.xlabel('Time Step',fontsize=8)
-    plt.ylabel('Deaths',fontsize=8)
+    plt.title('Deaths Over Time', fontsize=8)
+    plt.xlabel('Time Step', fontsize=8)
+    plt.ylabel('Deaths', fontsize=8)
     # add the current death count as a dot at the most recent point
     current_deaths = deaths
     plt.scatter(len(deaths_history) - 1, current_deaths, color='blue', label=f'Current Death Count: {current_deaths}')
-    plt.legend(loc="upper left",fontsize=7)
+    plt.legend(loc="upper left", fontsize=7)
     plt.grid(True)
     plt.gca().tick_params(axis='both', which='major', labelsize=5)
 
@@ -772,35 +846,47 @@ def update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_
     for trait, history in avg_trait_history.items():
         plt.plot(history, label=f'Average {trait.capitalize()}: {round(history[-1], 2)}')
     plt.plot(avg_power_history, label='Average Power', color='grey')  # Add the average power curve
-    plt.title('Average Traits Over Time',fontsize=8)
-    plt.xlabel('Time Step',fontsize=8)
-    plt.ylabel('Trait Value',fontsize=8)
+    plt.title('Average Traits Over Time', fontsize=8)
+    plt.xlabel('Time Step', fontsize=8)
+    plt.ylabel('Trait Value', fontsize=8)
     current_avg_power = avg_power_history[-1] if avg_power_history else 0
-    plt.scatter(len(avg_power_history) - 1, current_avg_power, color='gray', label = f'Current Average Power: {round(current_avg_power,2)}')
-    plt.legend(loc="upper left",fontsize=6)
+    plt.scatter(len(avg_power_history) - 1, current_avg_power, color='gray',
+                label=f'Current Average Power: {round(current_avg_power, 2)}')
+    plt.legend(loc="upper left", fontsize=6)
     plt.grid(True)
     plt.gca().tick_params(axis='both', which='major', labelsize=5)
 
     # plot average lifespan over time
     plt.subplot(4, 1, 4)
     plt.plot(avg_lifespan_history, color='black')
-    plt.title('Average Lifespan Over Time',fontsize=8)
-    plt.xlabel('Time Step',fontsize=8)
-    plt.ylabel('Lifespan',fontsize=8)
+    plt.title('Average Lifespan Over Time', fontsize=8)
+    plt.xlabel('Time Step', fontsize=8)
+    plt.ylabel('Lifespan', fontsize=8)
     # add the current average lifespan as a dot at the most recent point
     current_avg_lifespan = avg_lifespan_history[-1] if avg_lifespan_history else 0
-    plt.scatter(len(avg_lifespan_history) - 1, current_avg_lifespan, color='gray', label=f'Average Bacteria Lifespan: {round(current_avg_lifespan,2)}')
-    plt.legend(loc="upper left",fontsize=6)
+    plt.scatter(len(avg_lifespan_history) - 1, current_avg_lifespan, color='gray',
+                label=f'Average Bacteria Lifespan: {round(current_avg_lifespan, 2)}')
+    plt.legend(loc="upper left", fontsize=6)
     plt.grid(True)
 
     # adjust layout to prevent overlap
     plt.tight_layout()
 
-    # line to set the font size of tick labels for all axes (done for all graphs)
-    plt.gca().tick_params(axis='both', which='major', labelsize=5)
+    # save the plot as an image file
+    plot_filename = "plot.png"
+    plt.savefig(plot_filename)
 
-    plt.draw()
-    plt.pause(0.001)
+    # load the saved image using Pygame
+    plot_surface = pygame.image.load(plot_filename)
+
+    # remove the image file
+    os.remove(plot_filename)
+
+    # blit the plot onto the Pygame screen
+    screen.blit(plot_surface, (SIM_BOUND_WIDTH, 0))
+
+    # updates time step
+    pygame.display.update()
 
 # ---- end of analytics code ----
 
@@ -831,7 +917,7 @@ def run_simulation():
         y = random.randint(0, GRID_HEIGHT - 1)
         bacteria_list.append(Bacteria(x, y))
     
-    initialize_plot()
+    # initialize_plot()
     
     while running:
         clock.tick(FPS)
@@ -905,27 +991,27 @@ def run_simulation():
 
             # commented out: to run matplotlib graphs inside pygame screen
             # clear the previous plot
-            plt.clf()
+            # plt.clf()
 
             # update plot
             update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_lifespan_history, avg_power_history)
 
-            # get the current figure and axes
-            fig = plt.gcf()
-            ax = plt.gca()
+            # # get the current figure and axes
+            # fig = plt.gcf()
+            # ax = plt.gca()
 
-            # draw the plot onto pygame screen
-            canvas = FigureCanvasAgg(fig)
-            canvas.draw()
-            renderer = canvas.get_renderer()
-            raw_data = renderer.tostring_rgb()
-            size = canvas.get_width_height()
+            # # draw the plot onto pygame screen
+            # canvas = FigureCanvasAgg(fig)
+            # canvas.draw()
+            # renderer = canvas.get_renderer()
+            # raw_data = renderer.tostring_rgb()
+            # size = canvas.get_width_height()
 
-            # create a pygame surface from the matplotlib plot
-            matplotlib_surface = pygame.image.fromstring(raw_data, size, "RGB")
+            # # create a pygame surface from the matplotlib plot
+            # matplotlib_surface = pygame.image.fromstring(raw_data, size, "RGB")
 
-            # blit the matplotlib plot onto the pygame screen
-            screen.blit(matplotlib_surface, (SIM_BOUND_WIDTH, 0))
+            # # blit the matplotlib plot onto the pygame screen
+            # screen.blit(matplotlib_surface, (SIM_BOUND_WIDTH, 0))
 
         # stop updating graph if bacteria list is empty
         if len(bacteria_list) == 0:
