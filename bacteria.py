@@ -97,7 +97,7 @@ GRID_HEIGHT = HEIGHT // TILE_SIZE  # weight of the grid (in no. of tiles)
 
 # GRID_WIDTH = WIDTH // TILE_SIZE
 # GRID_HEIGHT = HEIGHT // TILE_SIZE
-FPS = 240 # clock ticks {FPS} times a real second
+FPS = 60 # clock ticks {FPS} times a real second
 
 # simple RGB colours
 BLACK = (0, 0, 0)
