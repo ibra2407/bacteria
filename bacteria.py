@@ -1,36 +1,3 @@
-# TODO
-'''
-Priorities: (1), (2), (3)
-Main Logic:
-3. play with parameters (ranges, values based on traits) (3)
-** currently "blooms" still happen - rapid breeding. we want a more controlled, chill simulation
-** also quite hard to actually keep track of who is doing what
-
-Analysis:
-2. return output properly in a list, try show steady state parameters (need to find this too), link to pt2 of SMA - burn in period, true expected steady state given a set of parameters (2)
-3. general observations
-
-Aesthetics:
-1. UI design of bacteria & background (graphics) (2)
-2. menu screen (to set parameters or smth) --> take out ALL possible parameters and ensure those parameter ranges are valid; define ranges (2)
-3. for website -> try to make all of it into one single screen? so can use pygbag to encapsulate everything (how to turn off the external mpl screen??)
-4. wrap up in pygbag into WASM
-
-Performance:
-
-Completed:
-1. investigate "blooming" of population, find out why child always dies so fast (2) - mating function issue
-2. Mating fucntion fixed
-3. run behaviour (1) - 20-80% hp will run if detect BL if self is not BL
-4. added hp bars
-5. absorb function fix -> enable any bacteria to eat each other; only if BL then rules change
-6. photosynthesis - sunlight zones (1)
-1. add init number as line on graph (1)
-1. make the matplotlib a bit smoother and can actually use to see shit (3)
-2. limit number of bacteria// soln: just run slower; showcase long term in video instead
-1. make absorb more complex - only part of membrane tanks dmg, but dmg still goes thru
-'''
-
 # install these libraries
 import pygame
 import io
@@ -72,19 +39,31 @@ os.environ['SDL_VIDEO_WINDOW_POS'] = f'{top_left_x},{top_left_y}'
 
 # ---- ---- ---- global variables & parameters ---- ---- ----
 
-# global variable to set number of bact in simulation
+# global variable to set number of bact in simulation (initial number of bacteria)
 sim_num_bact = 20
-# set mating hp threshold
+# set mating hp threshold (at this % of HP, bacteria will be in Mating mood)
 matingHP = 0.7
-# set Hungry hp
+# set hungry hp threshold (at this % of HP, bacteria will be in Hungry mood)
 bloodHP = 0.3
 
+# number of 1s allowed in dna string at the start; "power" of each cell at the start shd be low and get higher as generations go
+BCTR_START_POWER = 8 
+
+# can only choose to max out 4 out of 6 traits; 10% chance of a child to increase its power; only 18 out of 24 DNA characters can be 1 (other 6 has to be 0)
+BCTR_MAX_POWER = 18 
+
+# cooldown time in miliseconds for bacteria mating
+BCTR_MATING_COOLDOWN = 5000
+
+# max history limit for matplotlib graph
+MAX_DATA_POINTS = 20000
+
 # multipliers for trait impacts
-M_absorption = 2 # multiplicative scaling
-M_membrane = 0.8 # logarithmic? scaling; quite sensitive
+M_absorption = 2 # multiplicative scaling for absorption; the higher, the greater the effect of the absorption trait
+M_membrane = 0.8 # logarithmic scaling; quite sensitive; the lower, the greater the effect of the membrane trait
 # absorb_damage = min(self.absorption*M_absorption*((bacteria.membrane/16)**M_membrane), bacteria.hp)
 
-M_photosynthesis = 2 # efficacy of photosynthesis
+M_photosynthesis = 2 # efficacy of photosynthesis; higher, more HP recovered
 # hp_gain = sunlight_values[self.y][self.x] * (self.photosynthesis+1) * M_photosynthesis
 
 M_sacrifice = 0.1 # % of maxHP sacrificed to produce child
@@ -95,10 +74,13 @@ C_living = 1
 # propensity to hunt & mate when not hungry or mating
 prop_hunt = 0.9
 prop_mate = 0.9
+
 # propensity to relax back to normalcy
 prop_content = 0.9
+
 # probability of successful mating between 2 Mating bacterias
 prob_suc_mate = 0.8
+
 # propensity to roam (as opposed to sitting still and staying idle)
 prob_roam = 0.5
 
@@ -167,14 +149,6 @@ def draw_sun():
             rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
             pygame.draw.rect(screen, color, rect)
 
-# ---- DISASTER ----
-
-# should send in a diamond shaped 'nuke'
-# find a sparse prob dist for this
-# shd also impact the size of the disaster but limited to x length
-# warning time - 3 seconds?
-
-
 # ---- ---- ---- end of ENVIRONMENT code ---- ---- ----
 
 ####
@@ -184,11 +158,6 @@ class Bacteria:
 
     # BACTERIA SIMULATION PARAMS; access in class functions as Bacteria.
     EXISTING_IDS = set()  # store generated IDs, ensuring they dont repeat
-    START_POWER = 8 # number of 1s allowed in dna string at the start; "power" of each cell at the start shd be low and get higher as generations go
-    # can start with half of 24 (total)
-    MAX_POWER = 18 # can only choose to max out 4 out of 6 traits; 10% chance of a child to increase its power
-    MATING_COOLDOWN = 5000
-    # insert others to change "global" params for all bacteria
 
     def __init__(self, x, y, isChild = False, dna = None):
 
@@ -214,7 +183,7 @@ class Bacteria:
         # what about children dna? self-generate or take from parents? ideally must be input argument
         self.isChild = isChild
         if self.isChild == False:
-            self.dna = self.generate_dna(Bacteria.START_POWER)
+            self.dna = self.generate_dna(BCTR_START_POWER)
         else:
             self.dna = dna
 
@@ -558,7 +527,7 @@ class Bacteria:
                 if self.MatingOn and bacteria.MatingOn:
                     # check cooldown before mating
                     current_time = pygame.time.get_ticks()
-                    if (current_time - self.last_mate_time >= Bacteria.MATING_COOLDOWN) and (current_time - bacteria.last_mate_time >= Bacteria.MATING_COOLDOWN):
+                    if (current_time - self.last_mate_time >= BCTR_MATING_COOLDOWN) and (current_time - bacteria.last_mate_time >= BCTR_MATING_COOLDOWN):
                         child_dna = self.inherit(self.dna, bacteria.dna)
                         if child_dna == "":
                             # print("mating failed")
@@ -680,7 +649,7 @@ class Bacteria:
 
         # step 6:
         # ensure that the number of 1s in the child does not exceed MAX_POWER
-        if child_ones > Bacteria.MAX_POWER:
+        if child_ones > BCTR_MAX_POWER:
             print("child is too powerful")
             return "" # "Child is too powerful"
 
@@ -693,53 +662,49 @@ class Bacteria:
         # draw body
         pygame.draw.rect(screen, self.colour, (self.x * TILE_SIZE, self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
 
-        # also draws tendrils lines along with bacteria (the squares)
-        # for _, positions in self.tendrils_lines.items():
-        #     for pos in positions:
-        #         pygame.draw.rect(screen, self.colour, (pos[0] * TILE_SIZE, pos[1] * TILE_SIZE, TILE_SIZE, TILE_SIZE), 1)
-        
+        # frames for tendril animations
         frame1 = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA, 32)
         frame1.convert_alpha()
-        frame1.fill((0, 0, 0, 0))  # Fill with black color
+        frame1.fill((0, 0, 0, 0))  # transparent bg
         pygame.draw.arc(frame1, self.colour, (0, 0, TILE_SIZE, TILE_SIZE), 0.5 * math.pi, 1.5 * math.pi, 1)
 
         frame2 = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA, 32)
         frame2.convert_alpha()
-        frame2.fill((0, 0, 0, 0))  # Fill with black color
+        frame2.fill((0, 0, 0, 0))
         pygame.draw.arc(frame2, self.colour, (0, 0, TILE_SIZE, TILE_SIZE), 1.5 * math.pi, 0.5 * math.pi, 1)
 
         frame3 = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA, 32)
         frame3.convert_alpha()
-        frame3.fill((0, 0, 0, 0))  # Fill with black color
+        frame3.fill((0, 0, 0, 0))
         pygame.draw.arc(frame3, self.colour, (0, 0, TILE_SIZE, TILE_SIZE), 0, math.pi, 1)
 
         frame4 = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA, 32)
         frame4.convert_alpha()
-        frame4.fill((0, 0, 0, 0))  # Fill with black color
+        frame4.fill((0, 0, 0, 0))
         pygame.draw.arc(frame4, self.colour, (0, 0, TILE_SIZE, TILE_SIZE), math.pi, 2 * math.pi, 1)
 
         frame5 = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA, 32)
         frame5.convert_alpha()
-        frame5.fill((0, 0, 0, 0))  # Fill with black color
+        frame5.fill((0, 0, 0, 0))
         pygame.draw.arc(frame5, self.colour, (0, 0, TILE_SIZE, TILE_SIZE), 0.25 * math.pi, 1.25 * math.pi, 1)
 
         frame6 = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA, 32)
         frame6.convert_alpha()
-        frame6.fill((0, 0, 0, 0))  # Fill with black color
+        frame6.fill((0, 0, 0, 0))
         pygame.draw.arc(frame6, self.colour, (0, 0, TILE_SIZE, TILE_SIZE), 1.25 * math.pi, 0.25 * math.pi, 1)
 
         frame7 = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA, 32)
         frame7.convert_alpha()
-        frame7.fill((0, 0, 0, 0))  # Fill with black color
+        frame7.fill((0, 0, 0, 0))
         pygame.draw.arc(frame7, self.colour, (0, 0, TILE_SIZE, TILE_SIZE), 0.75 * math.pi, 1.75 * math.pi, 1)
 
         frame8 = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA, 32)
         frame8.convert_alpha()
-        frame8.fill((0, 0, 0, 0))  # Fill with black color
+        frame8.fill((0, 0, 0, 0))
         pygame.draw.arc(frame8, self.colour, (0, 0, TILE_SIZE, TILE_SIZE), 1.75 * math.pi, 0.75 * math.pi, 1)
         
-        # Draw tendrils
-        frame_index = pygame.time.get_ticks() // 2000  # Toggle frames every 1000 milliseconds
+        # draw tendrils & animate
+        frame_index = pygame.time.get_ticks() // 2000  # toggle frames every x milliseconds
         for direction, positions in self.tendrils_lines.items():
             for index, pos in enumerate(positions):
                 if direction == 'top' or direction == 'down':
@@ -753,21 +718,21 @@ class Bacteria:
 
                 screen.blit(frame, (pos[0] * TILE_SIZE, pos[1] * TILE_SIZE))
         
-        # Define animation parameters
-        animation_duration = 6000  # Animation duration in milliseconds (5 seconds)
-        max_radius = self.absorb_range * TILE_SIZE  # Maximum radius of the pulsing circle
-        animation_progress = pygame.time.get_ticks() % animation_duration  # Current progress of the animation
+        # define animation parameters for heartbeat
+        animation_duration = 6000  # animation duration in milliseconds
+        max_radius = self.absorb_range * TILE_SIZE  # maximum radius of the pulsing circle
+        animation_progress = pygame.time.get_ticks() % animation_duration # current state of anim
 
-        # Calculate the radius of the pulsing circle based on animation progress
+        # calculate the radius of the pulsing circle based on animation progress
         if animation_progress <= animation_duration / 2:
-            # Growing phase
+            # growing phase
             radius = (animation_progress / (animation_duration / 2)) * max_radius
         else:
-            # Shrinking phase
+            # shrinking phase
             radius = ((animation_duration - animation_progress) / (animation_duration / 2)) * max_radius
 
-        # Draw the pulsing circle centered at the bacteria's coordinates
-        pulsing_color = (255, 255, 255)  # Color of the pulsing circle (white)
+        # pulsing circle centered at the bacteria's coordinates
+        pulsing_color = (255, 255, 255)  # color of the pulsing circle (white)
         pygame.draw.circle(screen, pulsing_color, (self.x * TILE_SIZE + TILE_SIZE // 2, self.y * TILE_SIZE + TILE_SIZE // 2), int(radius), 1)
 
         
@@ -787,7 +752,7 @@ class Bacteria:
         # screen.blit(text_dna, (self.x * TILE_SIZE, self.y * TILE_SIZE + 2*TILE_SIZE))
         screen.blit(text_child,(self.x * TILE_SIZE, self.y * TILE_SIZE + 2*TILE_SIZE) )
 
-        # Hungry and mating flags
+        # hungry and mating flags
         font2 = pygame.font.SysFont(None, 18)
         if self.HungryOn:
             text_Hungry = font2.render("Hungry", True, RED)
@@ -844,8 +809,6 @@ class Bacteria:
 ####
 
 # ---- ---- ---- ---- ANALYTICS code ---- ---- ---- ----
-# max history limit
-MAX_DATA_POINTS = 20000
 
 # update_graph function saves the plot as an image file and then load it using pygame
 
@@ -929,6 +892,9 @@ def update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_
 
     # updates time step
     pygame.display.update()
+
+    # prevents many plots from opening up
+    plt.close()
 
 # ---- ---- ---- ---- end of ANALYTICS code ---- ---- ---- ----
 
@@ -1037,7 +1003,6 @@ def run_simulation():
 
         # update the graph if flag is true and bacteria list is not empty
         if update_graph_flag and len(bacteria_list) > 0:
-
             # update plot
             update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_lifespan_history, avg_power_history)
 
@@ -1059,72 +1024,3 @@ if __name__ == "__main__":
     run_simulation()
 
 # ---- ---- ---- ---- end of PYGAME LOOP ---- ---- ---- ---- 
-
-# archive codes
-
-# def draw_grid():
-#     for row in range(GRID_HEIGHT):
-#         pygame.draw.line(screen,BLACK,start_pos=(0,row*TILE_SIZE),end_pos=(WIDTH,row*TILE_SIZE))
-#     for col in range(GRID_WIDTH):
-#         pygame.draw.line(screen,BLACK,start_pos=(col*TILE_SIZE,0),end_pos=(col*TILE_SIZE,HEIGHT))
-
-# draw bounding box for bacteria simulation
-# def draw_outline():
-#     pygame.draw.rect(screen, BLACK, (LEFT_SIM_BOUND_WIDTH, 0, RIGHT_SIM_BOUND_WIDTH, HEIGHT), 2)
-
-    # highlight_rect = pygame.Rect(3*TILE_SIZE, 3*TILE_SIZE, TILE_SIZE, TILE_SIZE)
-        # pygame.draw.rect(screen, (255, 0, 0), highlight_rect, 0)
-        # here we use draw_grid to draw the positions on top of the grid
-        # draw_grid()
-        # draw_outline()
-# # end of sim status
-        # if len(bacteria_list) == 0:
-            # # sim = font2.render("Simulation ended.", True, WHITE)
-            # # screen.blit(sim, (WIDTH//2, HEIGHT//2))
-            # # sort bacteria by lifespan
-            # sorted_bacteria = sorted(bacteria_lifespan.items(), key=lambda x: x[1]['lifespan'], reverse=True)
-            
-            # # define font for displaying text on screen
-            # font3 = pygame.font.SysFont(None, 24)
-
-            # # display rankings
-            # y_offset = 60
-            # gap = 30
-
-            # # display champion
-            # champion_id, champion_details = sorted_bacteria[0]
-            # text_dna = font3.render(f"DNA of the champion bacteria: {champion_details['dna']}", True, WHITE)
-            # screen.blit(text_dna, (10, y_offset))
-            # # print(f"Longest living Bacteria has DNA {champion_details['dna']}")
-
-            # traits_text = font3.render("Trait values:", True, WHITE)
-            # screen.blit(traits_text, (10, y_offset + gap))
-            # for i, (trait, value) in enumerate(champion_details['traits'].items()):
-            #     text_trait = font3.render(f"{trait}: {value}", True, WHITE)
-            #     screen.blit(text_trait, (10, y_offset + (i+2)*gap))
-            #     # print(f"Champion bacteria traits: {trait}: {value}")
-            
-            # # print if the champion bacteria is a child or not
-            # child_text = "Child" if champion_details['isChild']==True else "not a child"
-            # text_child = font3.render(f"Champion is a {child_text}", True, WHITE)
-            # screen.blit(text_child, (10, y_offset + (i + 3) * gap))
-            # # print(f"Champion is {child_text}")
-
-            # # display top 10 bacteria with longest lifespans
-            # ranking_text = font3.render("Top 10 Ranking of Bacteria according to Lifespan:", True, WHITE)
-            # screen.blit(ranking_text, (20, y_offset + (i + 4) * gap))
-
-            # for j, (bacteria_id, details) in enumerate(sorted_bacteria[:10], start=1):
-            #     text_rank = f"{j}. Lifespan: {details['lifespan']}, {'Child' if details['isChild'] else 'NotChild'}"
-            #     for trait, value in details['traits'].items():
-            #         text_rank += f", {trait}: {value}"
-                
-            #     # render and display the text
-            #     text_rank_rendered = font3.render(text_rank, True, WHITE)
-            #     screen.blit(text_rank_rendered, (20, y_offset + (j+9) * gap))
-            
-            # # print(f"Top 10 rankings:")
-            # # for j, (bacteria_id, details) in enumerate(sorted_bacteria[:10], start=1):
-            # #     print(f"{j}. Lifespan: {details['lifespan']}, {'Child' if details['isChild'] else 'NotChild'}, DNA: {details['dna']}")
-            # #     for trait, value in details['traits'].items():
-            # #         print(f"   {trait}: {value}")
