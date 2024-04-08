@@ -742,14 +742,10 @@ class Bacteria:
         
         # display ID and HP overlayed on top of the main body/coordinate
         font = pygame.font.SysFont(None, 12)
-        text_id = font.render(f"ID: {self.id}", True, WHITE)
-        text_hp = font.render(f"HP: {self.hp}", True, WHITE)
-        text_dna = font.render(f"DNA: {self.dna}", True, WHITE)
+        text_hp = font.render(f"HP: {round(self.hp,2)}", True, WHITE)
         is_child = "Child" if self.isChild else "Not Child"
         text_child = font.render(f"{is_child}", True, WHITE)
-        # screen.blit(text_id, (self.x * TILE_SIZE, self.y * TILE_SIZE - TILE_SIZE))
         screen.blit(text_hp, (self.x * TILE_SIZE, self.y * TILE_SIZE + TILE_SIZE))
-        # screen.blit(text_dna, (self.x * TILE_SIZE, self.y * TILE_SIZE + 2*TILE_SIZE))
         screen.blit(text_child,(self.x * TILE_SIZE, self.y * TILE_SIZE + 2*TILE_SIZE) )
 
         # hungry and mating flags
