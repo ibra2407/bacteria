@@ -87,6 +87,20 @@ prob_suc_mate = 0.8
 # propensity to roam (as opposed to sitting still and staying idle)
 prob_roam = 0.5
 
+# create df for parameter data
+parameter_data = {
+    'Parameter': ['sim_num_bact', 'matingHP', 'bloodHP', 'BCTR_START_POWER', 'BCTR_MAX_POWER', 
+                'BCTR_MATING_COOLDOWN', 'MAX_DATA_POINTS', 'M_absorption', 'M_membrane', 
+                'M_photosynthesis', 'M_sacrifice', 'C_living', 'prop_hunt', 'prop_mate', 
+                'prop_content', 'prob_suc_mate', 'prob_roam'],
+    'Value': [sim_num_bact, matingHP, bloodHP, BCTR_START_POWER, BCTR_MAX_POWER, 
+            BCTR_MATING_COOLDOWN, MAX_DATA_POINTS, M_absorption, M_membrane, 
+            M_photosynthesis, M_sacrifice, C_living, prop_hunt, prop_mate, 
+            prop_content, prob_suc_mate, prob_roam]
+}
+
+df_parameter = pd.DataFrame(parameter_data)
+
 # empty df/ excel file for data
 excel_filename = ""
 data = {}
@@ -1042,9 +1056,10 @@ def run_simulation():
 
     pygame.quit()
 
-    # save df as excel file
-    excel_filename = f"simulation_data.xlsx"
-    df.to_excel(excel_filename, index=False)
+    # save simulation data and parameter data in the same excel file but in separate sheets
+    with pd.ExcelWriter('simulation_data.xlsx') as writer:
+        df.to_excel(writer, sheet_name='Simulation Data', index=False)
+        df_parameter.to_excel(writer, sheet_name='Parameter Data', index=False)
 
 if __name__ == "__main__":
     run_simulation()
