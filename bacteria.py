@@ -109,7 +109,7 @@ GRID_HEIGHT = HEIGHT // TILE_SIZE  # weight of the grid (in no. of tiles)
 
 # GRID_WIDTH = WIDTH // TILE_SIZE
 # GRID_HEIGHT = HEIGHT // TILE_SIZE
-FPS = 60 # clock ticks {FPS} times a real second
+FPS = 120 # clock ticks {FPS} times a real second
 
 # simple RGB colours
 BLACK = (0, 0, 0)
@@ -712,7 +712,7 @@ class Bacteria:
         pygame.draw.arc(frame8, self.colour, (0, 0, TILE_SIZE, TILE_SIZE), 1.75 * math.pi, 0.75 * math.pi, 1)
         
         # draw tendrils & animate
-        frame_index = pygame.time.get_ticks() // 2000  # toggle frames every x milliseconds
+        frame_index = pygame.time.get_ticks() // 500  # toggle frames every x milliseconds
         for direction, positions in self.tendrils_lines.items():
             for index, pos in enumerate(positions):
                 if direction == 'top' or direction == 'down':
@@ -746,7 +746,7 @@ class Bacteria:
         
         # draw absorb range as a circle
         absorb_range = self.absorb_range
-        pygame.draw.circle(screen, self.colour, (self.x * TILE_SIZE + TILE_SIZE // 2, self.y * TILE_SIZE + TILE_SIZE // 2), absorb_range * TILE_SIZE, 1)
+        pygame.draw.circle(screen, self.colour, (self.x * TILE_SIZE + TILE_SIZE // 2, self.y * TILE_SIZE + TILE_SIZE // 2), absorb_range * TILE_SIZE, 2)
         
         # display ID and HP overlayed on top of the main body/coordinate
         font = pygame.font.SysFont(None, 12)
