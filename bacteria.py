@@ -41,6 +41,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
+# ---- ---- ---- pygame application setup ---- ---- ----
+
 # initialise a pygame instance
 pygame.init()
 
@@ -64,6 +66,12 @@ top_left_y = (screen_height - window_height) // 2
 # set Pygame window position
 os.environ['SDL_VIDEO_WINDOW_POS'] = f'{top_left_x},{top_left_y}'
 
+# ---- ---- ---- end of pygame application setup ---- ---- ----
+
+####
+
+# ---- ---- ---- global variables & parameters ---- ---- ----
+
 # global variable to set number of bact in simulation
 sim_num_bact = 20
 # set mating hp threshold
@@ -72,8 +80,7 @@ matingHP = 0.7
 bloodHP = 0.3
 
 # multipliers for trait impacts
-
-M_absorption = 2
+M_absorption = 2 # multiplicative scaling
 M_membrane = 0.8 # logarithmic? scaling; quite sensitive
 # absorb_damage = min(self.absorption*M_absorption*((bacteria.membrane/16)**M_membrane), bacteria.hp)
 
@@ -85,9 +92,24 @@ M_sacrifice = 0.1 # % of maxHP sacrificed to produce child
 # cost of living (hp deduction each time step)
 C_living = 1
 
-# pygame screen elements
-WIDTH, HEIGHT = 1500,1000 # default 800,800 # width need to be div by 3
-TILE_SIZE = 10
+# propensity to hunt & mate when not hungry or mating
+prop_hunt = 0.9
+prop_mate = 0.9
+# propensity to relax back to normalcy
+prop_content = 0.9
+# probability of successful mating between 2 Mating bacterias
+prob_suc_mate = 0.8
+# propensity to roam (as opposed to sitting still and staying idle)
+prob_roam = 0.5
+
+# ---- ---- ---- end of global variables & parameters ---- ---- ----
+
+####
+
+# ---- ---- ---- ---- pygame screen elements ---- ---- ---- ----
+
+WIDTH, HEIGHT = 1500,1000 # width need to be div by 3 for nice MPL graph
+TILE_SIZE = 10 # size in pixels of each square cell
 
 # if need to bound the simulation area use this
 SIM_BOUND_WIDTH =  2 * (WIDTH // 3) # length of screen from 0 to rightmost boundary
@@ -113,7 +135,13 @@ BLUE = (0, 0, 255)
 CYAN = (0, 255, 255)
 PURPLE = (255, 0, 255)
 
-# ---- ---- ---- sunlight code ---- ---- ---- 
+# ---- ---- ---- ---- end of pygame screen elements ---- ---- ---- ----
+
+####
+
+# ---- ---- ---- ENVIRONMENT code ---- ---- ----
+
+# ---- SUNLIGHT ----
 # sunlight definitions
 # define sunlight parameters
 SUN_RADIUS = SIM_BOUND_WIDTH // 2
@@ -129,7 +157,6 @@ for y in range(GRID_HEIGHT):
             sunlight_values[y][x] = 1 - (distance / SUN_RADIUS)
         else:
             sunlight_values[y][x] = 0
-
 # print(sunlight_values)
 
 def draw_sun():
@@ -139,10 +166,20 @@ def draw_sun():
             color = (int(255 * sunlight), int(255 * sunlight), 0)  # pale yellow color based on sunlight value
             rect = pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
             pygame.draw.rect(screen, color, rect)
-# ---- ---- ---- end of sunlight code ---- ---- ----
+
+# ---- DISASTER ----
+
+# should send in a diamond shaped 'nuke'
+# find a sparse prob dist for this
+# shd also impact the size of the disaster but limited to x length
+# warning time - 3 seconds?
 
 
-# ---- ---- ---- ---- bacteria class ---- ---- ---- ----
+# ---- ---- ---- end of ENVIRONMENT code ---- ---- ----
+
+####
+
+# ---- ---- ---- ---- BACTERIA class ---- ---- ---- ----
 class Bacteria:
 
     # BACTERIA SIMULATION PARAMS; access in class functions as Bacteria.
@@ -192,20 +229,29 @@ class Bacteria:
         }
 
         # Bacteria TRAIT attributes here
+
+        # tendril traits
         self.tendrils = max(1, self.traits['tendrils']) # range: 1 to 15; minimally each one shd have a bit of tendril
 
+        # absorption traits & secondary traits
         self.absorption = self.traits['absorption']
         self.absorb_range = max(1, math.floor(self.absorption/2))
 
+        # membrane trait
         self.membrane = self.traits["membrane"]
 
+        # photosynthesis trait
         self.photosynthesis = self.traits['photosynthesis']
 
+        # legs trait
         self.legs = self.traits['legs']
+
+        # maxHP trait
         self.maxHP = max(200, self.traits['maxHP']*200) # need a separate variable; self.hp deducts stuff
+
+        # starting HP attribute
         self.hp = 0.5*max(200, self.traits['maxHP']*200) # start with mating hp so dont spawn in mating mood ( will decrease immediately when they live)
         
-
         # Bacteria STATES here
         # set both to False initially
         self.BloodlustOn = False
@@ -245,6 +291,8 @@ class Bacteria:
 
     # --- MAIN FUNCTION FOR BACTERIA LIFE & ACTIONS ---
     def live(self, bacteria_list):
+        
+        # lifespan increases every passing time step
         self.lifespan += 1
         
         # prevent more than self.maxHP
@@ -271,13 +319,13 @@ class Bacteria:
 
         # # HP middle zone; random chance
         if (self.hp > bloodHP*self.maxHP and self.hp <= matingHP*self.maxHP):
-            if prob_hunt > 0.9:
+            if prob_hunt > prop_hunt:
                 self.BloodlustOn = True
                 self.MatingOn = False
-            if prob_mate > 0.9:
+            if prob_mate > prop_mate:
                 self.BloodlustOn = False
                 self.MatingOn = True
-            if prob_movement > 0.2: # might require balancing
+            if prob_movement > (1-prop_content): # might require balancing
                 self.BloodlustOn = False
                 self.MatingOn = False
 
@@ -305,7 +353,7 @@ class Bacteria:
                             
                             # mating case
                             if self.MatingOn:
-                                if prob_mate > 0.8: # 90% chance will mate if both horny; actually chance of horny + meet when horny is alr q low so this doesnt matter much
+                                if prob_mate > prob_suc_mate: # 80% chance will mate if both horny; actually chance of horny + meet when horny is alr q low so this doesnt matter much
                                     self.mate(bacteria_list)
 
                         else:
@@ -320,13 +368,13 @@ class Bacteria:
         
         # default state
         if not self.BloodlustOn and not self.MatingOn:
-            if prob_movement > 0.5:
+            if prob_movement > prob_roam:
                 self.roam()
         
         # all are able to photosynthesise
         self.photosynthesise(sunlight_values)
 
-        # check for OBVIOUS collisions & prevent
+        # check for OBVIOUS collisions & prevent bacterias from occupying same cell
         next_positions = [(bacteria.x, bacteria.y) for bacteria in bacteria_list]
         next_positions.remove((self.x, self.y))  # remove current position for self-collision check
         if (self.x, self.y) in next_positions:
@@ -539,7 +587,6 @@ class Bacteria:
         self.MatingOn = False
         bacteria.MatingOn = False
 
-
     # inheritance logic - to get dna from mate() and pass it to inherit(), which will set the child bacteria new dna
     # use factory method
     @staticmethod
@@ -719,18 +766,11 @@ class Bacteria:
 
     # ---- END OF PYGAME SCREEN FUNCTIONS ----
             
+# ---- ---- ---- ---- end of BACTERIA class ---- ---- ---- ----
 
-# ---- ---- ---- ---- end of Bacteria class ---- ---- ---- ---- 
+####
 
-# ---- ---- ---- ---- pygame setup ---- ---- ---- ---- 
-screen = pygame.display.set_mode( (WIDTH,HEIGHT) ) #takes in a tuple as argument; not 2 numbers
-clock = pygame.time.Clock()
-
-# define global variables for game
-bacteria_list = []
-deaths = 0
-
-# ---- analytics code ----
+# ---- ---- ---- ---- ANALYTICS code ---- ---- ---- ----
 # max history limit
 MAX_DATA_POINTS = 20000
 
@@ -817,13 +857,23 @@ def update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_
     # updates time step
     pygame.display.update()
 
-# ---- end of analytics code ----
+# ---- ---- ---- ---- end of ANALYTICS code ---- ---- ---- ----
+
+####
+
+# ---- ---- ---- ---- main PYGAME LOOP setup ---- ---- ---- ---- 
+screen = pygame.display.set_mode( (WIDTH,HEIGHT) ) #takes in a tuple as argument; not 2 numbers
+clock = pygame.time.Clock()
+
+# define global variables for game
+bacteria_list = []
+deaths = 0
 
 # draw bounding box for bacteria simulation
 def draw_outline():
     pygame.draw.rect(screen, GREY, (0, 0, SIM_BOUND_WIDTH, HEIGHT), 4)
 
-# ---- ---- main pygame program/ simulation loop ---- ----
+# ---- main pygame simulation loop ----
 
 def run_simulation():
     global bacteria_list, deaths, MAX_DATA_POINTS
@@ -856,10 +906,11 @@ def run_simulation():
             # this enables the CLOSE button to work
             if event.type == pygame.QUIT:
                 running = False
-                
-        screen.fill(WHITE)
-        draw_sun()
-        draw_outline()
+        
+        # define the pygame screen        
+        screen.fill(WHITE) # white BG but doesnt rly matter
+        draw_sun() # draw sunlight grid
+        draw_outline() # draw outline of simulation module
 
         # draw and move bacteria 
         for bacteria in bacteria_list:
@@ -904,8 +955,6 @@ def run_simulation():
                 avg_trait_history[trait].append(value)
             avg_lifespan_history.append(avg_lifespan)
             avg_power_history.append(avg_power)
-        # print(avg_lifespan_history)
-
 
         # limit history lists to a maximum number of data points
         if len(bacteria_count_history) > MAX_DATA_POINTS:
@@ -915,32 +964,9 @@ def run_simulation():
 
         # update the graph if flag is true and bacteria list is not empty
         if update_graph_flag and len(bacteria_list) > 0:
-            # only to update the "external" plot
-            # update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_lifespan_history, avg_power_history)
-
-            # commented out: to run matplotlib graphs inside pygame screen
-            # clear the previous plot
-            # plt.clf()
 
             # update plot
             update_graph(bacteria_count_history, deaths_history, avg_trait_history, avg_lifespan_history, avg_power_history)
-
-            # # get the current figure and axes
-            # fig = plt.gcf()
-            # ax = plt.gca()
-
-            # # draw the plot onto pygame screen
-            # canvas = FigureCanvasAgg(fig)
-            # canvas.draw()
-            # renderer = canvas.get_renderer()
-            # raw_data = renderer.tostring_rgb()
-            # size = canvas.get_width_height()
-
-            # # create a pygame surface from the matplotlib plot
-            # matplotlib_surface = pygame.image.fromstring(raw_data, size, "RGB")
-
-            # # blit the matplotlib plot onto the pygame screen
-            # screen.blit(matplotlib_surface, (SIM_BOUND_WIDTH, 0))
 
         # stop updating graph if bacteria list is empty
         if len(bacteria_list) == 0:
@@ -958,6 +984,8 @@ def run_simulation():
 
 if __name__ == "__main__":
     run_simulation()
+
+# ---- ---- ---- ---- end of PYGAME LOOP ---- ---- ---- ---- 
 
 # archive codes
 
