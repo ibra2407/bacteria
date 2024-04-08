@@ -109,7 +109,7 @@ GRID_HEIGHT = HEIGHT // TILE_SIZE  # weight of the grid (in no. of tiles)
 
 # GRID_WIDTH = WIDTH // TILE_SIZE
 # GRID_HEIGHT = HEIGHT // TILE_SIZE
-FPS = 120 # clock ticks {FPS} times a real second
+FPS = 300 # clock ticks {FPS} times a real second
 
 # simple RGB colours
 BLACK = (0, 0, 0)
@@ -1021,21 +1021,28 @@ def run_simulation():
         # updates time step
         pygame.display.update()
         
-        # create df from the data to load into excel
+        # time step values
+        time_steps = list(range(1, len(bacteria_count_history) + 1))
+
+        # dictionary with the data
         data = {
+            'Time_Step': time_steps,
             'Bacteria_Count': bacteria_count_history,
             'Deaths': deaths_history,
             'Average_Lifespan': avg_lifespan_history,
             'Average_Power': avg_power_history
         }
+
+        # columns for average traits
         for trait, history in avg_trait_history.items():
             data[f'Average_{trait.capitalize()}'] = history
 
+        # make the df
         df = pd.DataFrame(data)
 
     pygame.quit()
 
-    # Save DataFrame to Excel file
+    # save df as excel file
     excel_filename = f"simulation_data.xlsx"
     df.to_excel(excel_filename, index=False)
 
