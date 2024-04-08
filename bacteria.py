@@ -7,6 +7,9 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_agg import FigureCanvasAgg
+import pandas as pd
+from datetime import datetime
+import openpyxl
 
 # ---- ---- ---- pygame application setup ---- ---- ----
 
@@ -83,6 +86,11 @@ prob_suc_mate = 0.8
 
 # propensity to roam (as opposed to sitting still and staying idle)
 prob_roam = 0.5
+
+# empty df/ excel file for data
+excel_filename = ""
+data = {}
+df = pd.DataFrame(data)
 
 # ---- ---- ---- end of global variables & parameters ---- ---- ----
 
@@ -1012,9 +1020,24 @@ def run_simulation():
 
         # updates time step
         pygame.display.update()
-        # pygame.display.flip()
+        
+        # create df from the data to load into excel
+        data = {
+            'Bacteria_Count': bacteria_count_history,
+            'Deaths': deaths_history,
+            'Average_Lifespan': avg_lifespan_history,
+            'Average_Power': avg_power_history
+        }
+        for trait, history in avg_trait_history.items():
+            data[f'Average_{trait.capitalize()}'] = history
+
+        df = pd.DataFrame(data)
 
     pygame.quit()
+
+    # Save DataFrame to Excel file
+    excel_filename = f"simulation_data.xlsx"
+    df.to_excel(excel_filename, index=False)
 
 if __name__ == "__main__":
     run_simulation()
