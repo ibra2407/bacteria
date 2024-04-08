@@ -76,7 +76,7 @@ os.environ['SDL_VIDEO_WINDOW_POS'] = f'{top_left_x},{top_left_y}'
 sim_num_bact = 20
 # set mating hp threshold
 matingHP = 0.7
-# set bloodlust hp
+# set Hungry hp
 bloodHP = 0.3
 
 # multipliers for trait impacts
@@ -254,7 +254,7 @@ class Bacteria:
         
         # Bacteria STATES here
         # set both to False initially
-        self.BloodlustOn = False
+        self.HungryOn = False
         self.MatingOn = False
 
         # colours - to eventually be replaced with animated object
@@ -315,24 +315,24 @@ class Bacteria:
         # # finds a mate
         if(self.hp > matingHP*self.maxHP):
             self.MatingOn = True
-            self.BloodlustOn = False
+            self.HungryOn = False
 
         # # HP middle zone; random chance
         if (self.hp > bloodHP*self.maxHP and self.hp <= matingHP*self.maxHP):
             if prob_hunt > prop_hunt:
-                self.BloodlustOn = True
+                self.HungryOn = True
                 self.MatingOn = False
             if prob_mate > prop_mate:
-                self.BloodlustOn = False
+                self.HungryOn = False
                 self.MatingOn = True
             if prob_movement > (1-prop_content): # might require balancing
-                self.BloodlustOn = False
+                self.HungryOn = False
                 self.MatingOn = False
 
         # definitely wants to hunt
-        # self.BloodlustOn = True
+        # self.HungryOn = True
         if self.hp <= bloodHP*self.maxHP:
-            self.BloodlustOn = True
+            self.HungryOn = True
             self.MatingOn = False
 
         # Bacteria states
@@ -343,12 +343,12 @@ class Bacteria:
                     if bacteria != self and (bacteria.x, bacteria.y) == pos:
                         # first other bacteria in tendrils lines found
                         # excited case
-                        if self.BloodlustOn or self.MatingOn:
+                        if self.HungryOn or self.MatingOn:
                             # print(f"Bacteria {self.colour_name} is on the chase for bacteria {bacteria.colour_name}")
                             self.chase(direction)
 
                             # hunting case
-                            if self.BloodlustOn:
+                            if self.HungryOn:
                                 self.absorb(bacteria_list)
                             
                             # mating case
@@ -357,17 +357,17 @@ class Bacteria:
                                     self.mate(bacteria_list)
 
                         else:
-                            # if not bloodlust or mating, will just avoid other bacteria thats hungry
+                            # if not Hungry or mating, will just avoid other bacteria thats hungry
                             self.run(direction)
                             
-        if self.BloodlustOn or self.MatingOn:
+        if self.HungryOn or self.MatingOn:
             self.frantic()
             if sunlight_values[self.y][self.x] > 0 and prob_photosynthesis < self.photosynthesis/15:
-                self.BloodlustOn = False
+                self.HungryOn = False
                 self.MatingOn = False
         
         # default state
-        if not self.BloodlustOn and not self.MatingOn:
+        if not self.HungryOn and not self.MatingOn:
             if prob_movement > prob_roam:
                 self.roam()
         
@@ -490,7 +490,7 @@ class Bacteria:
         for bacteria in bacteria_list:
             if bacteria != self and abs(self.x - bacteria.x) <= absorb_range and abs(self.y - bacteria.y) <= absorb_range: # only within range
                 # case 1 - both BL: only higher absorption will absorb
-                if self.BloodlustOn and bacteria.BloodlustOn:
+                if self.HungryOn and bacteria.HungryOn:
                     # sub case: higher absoption will win out
                     if self.absorption > bacteria.absorption:
                         absorb_damage = min(self.absorption*M_absorption*((bacteria.membrane/16)**M_membrane), bacteria.hp)  # set to depend on absorption value (20 is just example); also prevents absorption from regaining more than other bacterias hp
@@ -500,7 +500,7 @@ class Bacteria:
                         bacteria.hp -= absorb_damage
                 # case 2 - self is BL, other is not
                     # lower absorption still allowed
-                elif self.BloodlustOn and not bacteria.BloodlustOn:
+                elif self.HungryOn and not bacteria.HungryOn:
                     absorb_damage = min(self.absorption*M_absorption - bacteria.membrane*M_membrane, bacteria.hp)
                     if absorb_damage < 1: # if the other guy armor is cracked, deal only 1 dmg
                             absorb_damage = 1
@@ -693,10 +693,83 @@ class Bacteria:
         # draw body
         pygame.draw.rect(screen, self.colour, (self.x * TILE_SIZE, self.y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
 
-        # also draws tendrils lines along with bacteria
-        for _, positions in self.tendrils_lines.items():
-            for pos in positions:
-                pygame.draw.rect(screen, self.colour, (pos[0] * TILE_SIZE, pos[1] * TILE_SIZE, TILE_SIZE, TILE_SIZE), 1)
+        # also draws tendrils lines along with bacteria (the squares)
+        # for _, positions in self.tendrils_lines.items():
+        #     for pos in positions:
+        #         pygame.draw.rect(screen, self.colour, (pos[0] * TILE_SIZE, pos[1] * TILE_SIZE, TILE_SIZE, TILE_SIZE), 1)
+        
+        frame1 = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA, 32)
+        frame1.convert_alpha()
+        frame1.fill((0, 0, 0, 0))  # Fill with black color
+        pygame.draw.arc(frame1, self.colour, (0, 0, TILE_SIZE, TILE_SIZE), 0.5 * math.pi, 1.5 * math.pi, 1)
+
+        frame2 = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA, 32)
+        frame2.convert_alpha()
+        frame2.fill((0, 0, 0, 0))  # Fill with black color
+        pygame.draw.arc(frame2, self.colour, (0, 0, TILE_SIZE, TILE_SIZE), 1.5 * math.pi, 0.5 * math.pi, 1)
+
+        frame3 = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA, 32)
+        frame3.convert_alpha()
+        frame3.fill((0, 0, 0, 0))  # Fill with black color
+        pygame.draw.arc(frame3, self.colour, (0, 0, TILE_SIZE, TILE_SIZE), 0, math.pi, 1)
+
+        frame4 = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA, 32)
+        frame4.convert_alpha()
+        frame4.fill((0, 0, 0, 0))  # Fill with black color
+        pygame.draw.arc(frame4, self.colour, (0, 0, TILE_SIZE, TILE_SIZE), math.pi, 2 * math.pi, 1)
+
+        frame5 = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA, 32)
+        frame5.convert_alpha()
+        frame5.fill((0, 0, 0, 0))  # Fill with black color
+        pygame.draw.arc(frame5, self.colour, (0, 0, TILE_SIZE, TILE_SIZE), 0.25 * math.pi, 1.25 * math.pi, 1)
+
+        frame6 = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA, 32)
+        frame6.convert_alpha()
+        frame6.fill((0, 0, 0, 0))  # Fill with black color
+        pygame.draw.arc(frame6, self.colour, (0, 0, TILE_SIZE, TILE_SIZE), 1.25 * math.pi, 0.25 * math.pi, 1)
+
+        frame7 = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA, 32)
+        frame7.convert_alpha()
+        frame7.fill((0, 0, 0, 0))  # Fill with black color
+        pygame.draw.arc(frame7, self.colour, (0, 0, TILE_SIZE, TILE_SIZE), 0.75 * math.pi, 1.75 * math.pi, 1)
+
+        frame8 = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA, 32)
+        frame8.convert_alpha()
+        frame8.fill((0, 0, 0, 0))  # Fill with black color
+        pygame.draw.arc(frame8, self.colour, (0, 0, TILE_SIZE, TILE_SIZE), 1.75 * math.pi, 0.75 * math.pi, 1)
+        
+        # Draw tendrils
+        frame_index = pygame.time.get_ticks() // 2000  # Toggle frames every 1000 milliseconds
+        for direction, positions in self.tendrils_lines.items():
+            for index, pos in enumerate(positions):
+                if direction == 'top' or direction == 'down':
+                    frame = frame1 if (index % 2 == 0 and frame_index % 2 == 1) or (index % 2 == 1 and frame_index % 2 == 0) else frame2
+                elif direction == 'right' or direction == 'left':
+                    frame = frame3 if (index % 2 == 0 and frame_index % 2 == 1) or (index % 2 == 1 and frame_index % 2 == 0) else frame4
+                elif direction == 'top_right' or direction == 'down_left':
+                    frame = frame5 if (index % 2 == 0 and frame_index % 2 == 1) or (index % 2 == 1 and frame_index % 2 == 0) else frame6
+                elif direction == 'top_left' or direction == 'down_right':
+                    frame = frame7 if (index % 2 == 0 and frame_index % 2 == 1) or (index % 2 == 1 and frame_index % 2 == 0) else frame8
+
+                screen.blit(frame, (pos[0] * TILE_SIZE, pos[1] * TILE_SIZE))
+        
+        # Define animation parameters
+        animation_duration = 6000  # Animation duration in milliseconds (5 seconds)
+        max_radius = self.absorb_range * TILE_SIZE  # Maximum radius of the pulsing circle
+        animation_progress = pygame.time.get_ticks() % animation_duration  # Current progress of the animation
+
+        # Calculate the radius of the pulsing circle based on animation progress
+        if animation_progress <= animation_duration / 2:
+            # Growing phase
+            radius = (animation_progress / (animation_duration / 2)) * max_radius
+        else:
+            # Shrinking phase
+            radius = ((animation_duration - animation_progress) / (animation_duration / 2)) * max_radius
+
+        # Draw the pulsing circle centered at the bacteria's coordinates
+        pulsing_color = (255, 255, 255)  # Color of the pulsing circle (white)
+        pygame.draw.circle(screen, pulsing_color, (self.x * TILE_SIZE + TILE_SIZE // 2, self.y * TILE_SIZE + TILE_SIZE // 2), int(radius), 1)
+
         
         # draw absorb range as a circle
         absorb_range = self.absorb_range
@@ -714,11 +787,11 @@ class Bacteria:
         # screen.blit(text_dna, (self.x * TILE_SIZE, self.y * TILE_SIZE + 2*TILE_SIZE))
         screen.blit(text_child,(self.x * TILE_SIZE, self.y * TILE_SIZE + 2*TILE_SIZE) )
 
-        # bloodlust and mating flags
+        # Hungry and mating flags
         font2 = pygame.font.SysFont(None, 18)
-        if self.BloodlustOn:
-            text_bloodlust = font2.render("Bloodlust", True, RED)
-            screen.blit(text_bloodlust, (self.x * TILE_SIZE, self.y * TILE_SIZE + 3*TILE_SIZE))
+        if self.HungryOn:
+            text_Hungry = font2.render("Hungry", True, RED)
+            screen.blit(text_Hungry, (self.x * TILE_SIZE, self.y * TILE_SIZE + 3*TILE_SIZE))
         elif self.MatingOn:
             text_mating = font2.render("Mating", True, BLUE)
             screen.blit(text_mating, (self.x * TILE_SIZE, self.y * TILE_SIZE + 3*TILE_SIZE))
