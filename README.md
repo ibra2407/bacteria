@@ -15,5 +15,6 @@ To run the simulation locally, follow these steps:
 1. Install necessary libraries:
    ```bash
       pip install -r requirements.txt
+2. Run "bacteria.py". A pygame screen should pop up. Note that because this is an Agent-Based simulation, it is computationally intensive.
 
 
