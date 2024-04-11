@@ -33,8 +33,9 @@ window_height = 750
 top_left_x = (screen_width - window_width) // 2
 top_left_y = (screen_height - window_height) // 2
 
-# set Pygame window position
+# set pygame window position
 os.environ['SDL_VIDEO_WINDOW_POS'] = f'{top_left_x},{top_left_y}'
+
 
 # ---- ---- ---- end of pygame application setup ---- ---- ----
 
@@ -457,8 +458,8 @@ class Bacteria:
         step = 1
         self.move(direction, step)
     
-    def frantic(self): # movement pattern ROAM
-        # reduce hp as it roams - costs energy to move// remove later
+    def frantic(self): # movement pattern ROAM with more aggression
+        # reduce hp as it roams - costs energy to move
         self.hp -= C_living
         # generate random direction and move
         direction = random.choice(['top', 'top_right', 'right', 'down_right', 'down', 'down_left', 'left', 'top_left'])
@@ -814,7 +815,7 @@ class Bacteria:
 
         # relative to the grid cell
         hp_bar_x = grid_cell_x + (TILE_SIZE - bar_width) // 2
-        hp_bar_y = grid_cell_y - 10  # Adjusted position above the grid cell
+        hp_bar_y = grid_cell_y - 10  # adjusted position above the grid cell
 
         # draw the HP bar
         pygame.draw.rect(screen, BLACK, [hp_bar_x, hp_bar_y, bar_width, 5])
