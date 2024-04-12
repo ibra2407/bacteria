@@ -44,49 +44,49 @@ os.environ['SDL_VIDEO_WINDOW_POS'] = f'{top_left_x},{top_left_y}'
 # ---- ---- ---- global variables & parameters ---- ---- ----
 
 # global variable to set number of bact in simulation (initial number of bacteria)
-sim_num_bact = 20
+sim_num_bact = 20 # not too high - will lag your computer!
 # set mating hp threshold (at this % of HP, bacteria will be in Mating mood)
-matingHP = 0.7
+matingHP = 0.7 # between 0.55-0.9; any higher than 0.9 unlikely for any mating at all
 # set hungry hp threshold (at this % of HP, bacteria will be in Hungry mood)
-bloodHP = 0.3
+bloodHP = 0.3 # between 0.1 to 0.45; any lower than 0.1 unlikely to get Hungry and want to eat other Bacteria at all
 
 # number of 1s allowed in dna string at the start; "power" of each cell at the start shd be low and get higher as generations go
-BCTR_START_POWER = 8 
+BCTR_START_POWER = 8 # anywhere between 4 to 12; lower than 4 and the starting bacteria is likely to die off due to cost of living
 
 # can only choose to max out 4 out of 6 traits; 10% chance of a child to increase its power; only 18 out of 24 DNA characters can be 1 (other 6 has to be 0)
-BCTR_MAX_POWER = 18 
+BCTR_MAX_POWER = 18 # at most 20; any higher and bacteria is trivially too strong (everything will be maxed out)
 
 # cooldown time in miliseconds for bacteria mating
-BCTR_MATING_COOLDOWN = 5000
+BCTR_MATING_COOLDOWN = 5000 # any shorter and too many children will be produced - higher values means less children produced in general
 
 # max history limit for matplotlib graph
-MAX_DATA_POINTS = 20000
+MAX_DATA_POINTS = 20000 # can set to any high amount sufficient for entire desired length for the run
 
 # multipliers for trait impacts
 M_absorption = 2 # multiplicative scaling for absorption; the higher, the greater the effect of the absorption trait
 M_membrane = 0.8 # logarithmic scaling; quite sensitive; the lower, the greater the effect of the membrane trait
-# absorb_damage = min(self.absorption*M_absorption*((bacteria.membrane/16)**M_membrane), bacteria.hp)
+# formula: absorb_damage = min(self.absorption*M_absorption*((bacteria.membrane/16)**M_membrane), bacteria.hp)
 
 M_photosynthesis = 2 # efficacy of photosynthesis; higher, more HP recovered
-# hp_gain = sunlight_values[self.y][self.x] * (self.photosynthesis+1) * M_photosynthesis
+# formula: hp_gain = sunlight_values[self.y][self.x] * (self.photosynthesis+1) * M_photosynthesis
 
 M_sacrifice = 0.1 # % of maxHP sacrificed to produce child
 
-# cost of living (hp deduction each time step)
+# cost of living (hp deduction each time step); higher means living itself is more costly, bacteria die faster
 C_living = 1
 
 # propensity to hunt & mate when not hungry or mating
-prop_hunt = 0.9
-prop_mate = 0.9
+prop_hunt = 0.1 # 10% chance of randomly getting hungry or mating mood even when not in hp thresholds for those states
+prop_mate = 0.1
 
 # propensity to relax back to normalcy
-prop_content = 0.9
+prop_content = 0.1 # 10% chance of removing hungry or mating mood
 
 # probability of successful mating between 2 Mating bacterias
-prob_suc_mate = 0.8
+prob_suc_mate = 0.2 # 20% chance of successful mating
 
 # propensity to roam (as opposed to sitting still and staying idle)
-prob_roam = 0.5
+prob_roam = 0.5 # 50% chance of roaming
 
 # create df for parameter data
 parameter_data = {
@@ -311,10 +311,10 @@ class Bacteria:
 
         # # HP middle zone; random chance
         if (self.hp > bloodHP*self.maxHP and self.hp <= matingHP*self.maxHP):
-            if prob_hunt > prop_hunt:
+            if prob_hunt > 1-prop_hunt:
                 self.HungryOn = True
                 self.MatingOn = False
-            if prob_mate > prop_mate:
+            if prob_mate > 1-prop_mate:
                 self.HungryOn = False
                 self.MatingOn = True
             if prob_movement > (1-prop_content): # might require balancing
@@ -345,7 +345,7 @@ class Bacteria:
                             
                             # mating case
                             if self.MatingOn:
-                                if prob_mate > prob_suc_mate: # 80% chance will mate if both horny; actually chance of horny + meet when horny is alr q low so this doesnt matter much
+                                if prob_mate > 1-prob_suc_mate: # 80% chance will mate if both horny; actually chance of horny + meet when horny is alr q low so this doesnt matter much
                                     self.mate(bacteria_list)
 
                         else:
@@ -360,7 +360,7 @@ class Bacteria:
         
         # default state
         if not self.HungryOn and not self.MatingOn:
-            if prob_movement > prob_roam:
+            if prob_movement > 1-prob_roam:
                 self.roam()
         
         # all are able to photosynthesise
