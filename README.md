@@ -12,10 +12,11 @@ This project simulates the behavior and evolution of bacteria in a virtual envir
 ## Getting Started
 To run the simulation locally, follow these steps:
 
-1. Install necessary libraries:
+1. Download the project file. Only the "bacteria.py" file is truly needed.
+2. Install necessary libraries:
    ```bash
       pip install -r requirements.txt
-2. Run "bacteria.py". A Pygame screen should pop up. Note that because this is an Agent-Based simulation, it is computationally intensive.
-3. An Excel file "simulation_data.xlsx" containing the simulation data (up until the latest time you ran it or when all bacterias have died) will automatically be downloaded into the same folder as bacteria.py. Further output analysis can be done using that data separately.
+3. Run "bacteria.py". A Pygame screen should pop up. Note that because this is an Agent-Based simulation, it is computationally intensive.
+4. An Excel file "simulation_data.xlsx" containing the simulation data (up until the latest time you ran it or when all bacterias have died) will automatically be downloaded into the same folder as bacteria.py. Further output analysis can be done using that data separately.
 
 
