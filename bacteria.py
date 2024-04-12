@@ -22,8 +22,8 @@ screen_width = screen_info.current_w
 screen_height = screen_info.current_h
 
 # set pygame window size & where it pops up on screen
-window_width = 1500
-window_height = 750
+window_width = 1150
+window_height = 790
 # window_size = (window_width, window_height)
 
 # # create pygame window
