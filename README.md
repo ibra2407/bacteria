@@ -13,7 +13,7 @@ This project simulates the behavior and evolution of bacteria in a virtual envir
 To run the simulation locally, follow these steps:
 
 1. Download the project file. Only the "bacteria.py" file is truly needed.
-2. Install necessary libraries:
+2. Install necessary libraries either through Command Prompt "pip install {library name}" or:
    ```bash
       pip install -r requirements.txt
 3. Run "bacteria.py". A Pygame screen should pop up. Note that because this is an Agent-Based simulation, it is computationally intensive.
