@@ -44,7 +44,7 @@ os.environ['SDL_VIDEO_WINDOW_POS'] = f'{top_left_x},{top_left_y}'
 # ---- ---- ---- global variables & parameters ---- ---- ----
 
 # global variable to set number of bact in simulation (initial number of bacteria)
-sim_num_bact = 20 # not too high - will lag your computer!
+sim_num_bact = 10 # not too high - will lag your computer!
 # set mating hp threshold (at this % of HP, bacteria will be in Mating mood)
 matingHP = 0.7 # between 0.55-0.9; any higher than 0.9 unlikely for any mating at all
 # set hungry hp threshold (at this % of HP, bacteria will be in Hungry mood)
@@ -149,7 +149,7 @@ PURPLE = (255, 0, 255)
 # ---- SUNLIGHT ----
 # sunlight definitions
 # define sunlight parameters
-SUN_RADIUS = SIM_BOUND_WIDTH // 2
+SUN_RADIUS = SIM_BOUND_WIDTH // 3
 SUN_CENTER = (SIM_BOUND_WIDTH // 2, HEIGHT // 2)
 
 # define sunlight values for each cell in the grid based on distance from the center
