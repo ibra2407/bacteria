@@ -44,20 +44,20 @@ os.environ['SDL_VIDEO_WINDOW_POS'] = f'{top_left_x},{top_left_y}'
 # ---- ---- ---- global variables & parameters ---- ---- ----
 
 # global variable to set number of bact in simulation (initial number of bacteria)
-sim_num_bact = 10 # not too high - will lag your computer!
+sim_num_bact = 25 # not too high - will lag your computer!
 # set mating hp threshold (at this % of HP, bacteria will be in Mating mood)
 matingHP = 0.7 # between 0.55-0.9; any higher than 0.9 unlikely for any mating at all
 # set hungry hp threshold (at this % of HP, bacteria will be in Hungry mood)
 bloodHP = 0.3 # between 0.1 to 0.45; any lower than 0.1 unlikely to get Hungry and want to eat other Bacteria at all
 
 # number of 1s allowed in dna string at the start; "power" of each cell at the start shd be low and get higher as generations go
-BCTR_START_POWER = 8 # anywhere between 4 to 12; lower than 4 and the starting bacteria is likely to die off due to cost of living
+BCTR_START_POWER = 12 # anywhere between 4 to 12; lower than 4 and the starting bacteria is likely to die off due to cost of living
 
 # can only choose to max out 4 out of 6 traits; 10% chance of a child to increase its power; only 18 out of 24 DNA characters can be 1 (other 6 has to be 0)
-BCTR_MAX_POWER = 18 # at most 20; any higher and bacteria is trivially too strong (everything will be maxed out)
+BCTR_MAX_POWER = 20 # at most 20; any higher and bacteria is trivially too strong (everything will be maxed out)
 
 # cooldown time in miliseconds for bacteria mating
-BCTR_MATING_COOLDOWN = 5000 # any shorter and too many children will be produced - higher values means less children produced in general
+BCTR_MATING_COOLDOWN = 3000 # any shorter and too many children will be produced - higher values means less children produced in general
 
 # max history limit for matplotlib graph
 MAX_DATA_POINTS = 20000 # can set to any high amount sufficient for entire desired length for the run
@@ -67,13 +67,13 @@ M_absorption = 2 # multiplicative scaling for absorption; the higher, the greate
 M_membrane = 0.8 # logarithmic scaling; quite sensitive; the lower, the greater the effect of the membrane trait
 # formula: absorb_damage = min(self.absorption*M_absorption*((bacteria.membrane/16)**M_membrane), bacteria.hp)
 
-M_photosynthesis = 2 # efficacy of photosynthesis; higher, more HP recovered
+M_photosynthesis = 3 # efficacy of photosynthesis; higher, more HP recovered
 # formula: hp_gain = sunlight_values[self.y][self.x] * (self.photosynthesis+1) * M_photosynthesis
 
-M_sacrifice = 0.1 # % of maxHP sacrificed to produce child
+M_sacrifice = 0.2 # % of maxHP sacrificed to produce child
 
 # cost of living (hp deduction each time step); higher means living itself is more costly, bacteria die faster
-C_living = 1
+C_living = 3
 
 # propensity to hunt & mate when not hungry or mating
 prop_hunt = 0.1 # 10% chance of randomly getting hungry or mating mood even when not in hp thresholds for those states
@@ -83,10 +83,10 @@ prop_mate = 0.1
 prop_content = 0.1 # 10% chance of removing hungry or mating mood
 
 # probability of successful mating between 2 Mating bacterias
-prob_suc_mate = 0.2 # 20% chance of successful mating
+prob_suc_mate = 0.4 # 20% chance of successful mating
 
 # propensity to roam (as opposed to sitting still and staying idle)
-prob_roam = 0.5 # 50% chance of roaming
+prob_roam = 0.7 # 50% chance of roaming
 
 # create df for parameter data
 parameter_data = {
@@ -124,7 +124,7 @@ GRID_HEIGHT = HEIGHT // TILE_SIZE  # weight of the grid (in no. of tiles)
 
 # GRID_WIDTH = WIDTH // TILE_SIZE
 # GRID_HEIGHT = HEIGHT // TILE_SIZE
-FPS = 300 # clock ticks {FPS} times a real second
+FPS = 3000 # clock ticks {FPS} times a real second
 
 # simple RGB colours
 BLACK = (0, 0, 0)
@@ -140,6 +140,19 @@ BLUE = (0, 0, 255)
 CYAN = (0, 255, 255)
 PURPLE = (255, 0, 255)
 
+#more colours
+NAVY = (0, 0, 128)
+TEAL = (0, 128, 128)
+MAROON = (128, 0, 0)
+OLIVE = (128, 128, 0)
+LIME = (0, 255, 0)
+AQUA = (0, 255, 255)
+FUCHSIA = (255, 0, 255)
+GRAY = (128, 128, 128)
+GOLD = (255, 215, 0)
+CRIMSON = (220, 20, 60)
+INDIGO = (75, 0, 130)
+
 # ---- ---- ---- ---- end of pygame screen elements ---- ---- ---- ----
 
 ####
@@ -149,7 +162,7 @@ PURPLE = (255, 0, 255)
 # ---- SUNLIGHT ----
 # sunlight definitions
 # define sunlight parameters
-SUN_RADIUS = SIM_BOUND_WIDTH // 3
+SUN_RADIUS = SIM_BOUND_WIDTH // 2
 SUN_CENTER = (SIM_BOUND_WIDTH // 2, HEIGHT // 2)
 
 # define sunlight values for each cell in the grid based on distance from the center
@@ -239,10 +252,10 @@ class Bacteria:
         self.legs = self.traits['legs']
 
         # maxHP trait
-        self.maxHP = max(200, self.traits['maxHP']*200) # need a separate variable; self.hp deducts stuff
+        self.maxHP = max(300, self.traits['maxHP']*200) # need a separate variable; self.hp deducts stuff
 
         # starting HP attribute
-        self.hp = 0.5*max(200, self.traits['maxHP']*200) # start with mating hp so dont spawn in mating mood ( will decrease immediately when they live)
+        self.hp = 0.5*max(300, self.traits['maxHP']*200) # start with mating hp so dont spawn in mating mood ( will decrease immediately when they live)
         
         # Bacteria STATES here
         # set both to False initially
@@ -258,7 +271,16 @@ class Bacteria:
             "BLUE": BLUE,
             "CYAN": CYAN,
             "PURPLE": PURPLE,
-            "PINK": PINK
+            "PINK": PINK,
+            "NAVY": NAVY,
+            "TEAL": TEAL,
+            "MAROON": MAROON,
+            "LIME": LIME,
+            "AQUA": AQUA,
+            "FUCHSIA": FUCHSIA,
+            "GOLD": GOLD,
+            "CRIMSON": CRIMSON,
+            "INDIGO": INDIGO
         }
         # select a random colour key from colour_dict
         colour_name = random.choice(list(colour_dict.keys()))

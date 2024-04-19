@@ -20,4 +20,6 @@ To run the simulation locally, follow these steps:
 4. An Excel file "simulation_data.xlsx" containing the simulation data (up until the latest time you ran it or when all bacterias have died) will automatically be downloaded into the same folder as bacteria.py. Further output analysis can be done using that data separately.
 5. This video explains the simulation project in detail: https://www.youtube.com/watch?v=sSySu3bpQIY&ab_channel=reservoir247
 
+## Selected to be featured at SUTD's ESD SMA Project Showcase
+
 
