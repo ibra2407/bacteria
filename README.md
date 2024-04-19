@@ -21,7 +21,8 @@ To run the simulation locally, follow these steps:
 5. This video explains the simulation project in detail: https://www.youtube.com/watch?v=sSySu3bpQIY&ab_channel=reservoir247
 
 #### Selected to be featured at SUTD's ESD SMA Project Showcase
-![image](https://github.com/ibra2407/bacteria/showcase.jpg)
+![showcase](https://github.com/ibra2407/bacteria/assets/113652688/7204e34a-2a97-45bc-8bd5-d7be90d69e46)
+
 
 
 
