@@ -3,7 +3,7 @@
 ## Overview
 EcoGenesys; Guardians of the BioSphere. This project simulates the behavior and evolution of bacteria in a virtual environment. The simulation includes various parameters and traits that influence the behavior and survival of the bacteria. The goal is to identify a set of traits for the bacteria to either lead to a steady-state or leading to all bacteria dying. When steady-state is achieved, the bacteria traits are deemed to be non-invasive; otherwise, it's either invasive or simply not well-adapted to the environment.
 
-![Pitch Video]([https://www.youtube.com/watch?v=NGI1KkS6CXY&ab_channel=reservoir247])
+Promo Video: https://www.youtube.com/watch?v=NGI1KkS6CXY&ab_channel=reservoir247
 
 ## Features
 - **Simulation Environment:** Provides a virtual environment where bacteria can live, move, and interact with each other.
