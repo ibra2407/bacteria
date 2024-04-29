@@ -11,6 +11,9 @@ Promo Video: https://www.youtube.com/watch?v=NGI1KkS6CXY&ab_channel=reservoir247
 - **Dynamic Environment:** The simulation includes dynamic factors such as sunlight availability and random events that affect the bacteria population.
 - **Statistical Analysis:** Tracks various metrics over time, such as population count, deaths, average lifespan, and average genetic traits, providing insights into the behavior and adaptations of the bacteria population.
 
+Sample screenshot:
+![Screenshot (644)](https://github.com/ibra2407/bacteria/assets/113652688/16e12af6-0ee1-4224-8fa1-53a6b3101de5)
+
 ## Getting Started
 To run the simulation locally, follow these steps:
 
