@@ -12,7 +12,7 @@ Promo Video: https://www.youtube.com/watch?v=NGI1KkS6CXY&ab_channel=reservoir247
 - **Statistical Analysis:** Tracks various metrics over time, such as population count, deaths, average lifespan, and average genetic traits, providing insights into the behavior and adaptations of the bacteria population.
 
 Sample screenshot:
-![Screenshot (645)](https://github.com/ibra2407/bacteria/assets/113652688/65fd1fa8-7123-430e-a5ef-e7c0f08b153a)
+![Screenshot (645)](https://github.com/ibra2407/bacteria/assets/113652688/1806660c-e56a-4d59-b265-b8a6775761ab)
 
 ## Getting Started
 To run the simulation locally, follow these steps:
